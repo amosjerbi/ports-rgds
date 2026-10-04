@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<gameList>
+  <game>
+    <path>./A Short Hike.sh</path>
+    <name>A Short Hike (experimental)</name>
+    <desc>Local PortMaster launcher prototype. Requires the Linux game release and Box64.</desc>
+    <releasedate>20190730T000000</releasedate>
+    <developer>adamgryu</developer>
+    <publisher>adamgryu</publisher>
+    <genre>Adventure</genre>
+  </game>
+</gameList>

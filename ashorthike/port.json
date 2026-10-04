@@ -1,0 +1,24 @@
+{
+  "version": 4,
+  "name": "ashorthike.zip",
+  "items": ["A Short Hike.sh", "ashorthike"],
+  "items_opt": [],
+  "attr": {
+    "title": "A Short Hike",
+    "porter": ["local prototype"],
+    "desc": "Explore Hawk Peak in A Short Hike.",
+    "desc_md": null,
+    "inst": "Supply the Linux game files in ashorthike/gamedata. On RG DS with ROCKNIX, select the Panfrost GPU driver and reboot. First startup may take roughly three minutes. Controls and full gameplay remain unverified.",
+    "inst_md": null,
+    "genres": ["adventure", "platformer"],
+    "image": null,
+    "rtr": false,
+    "exp": true,
+    "runtime": ["weston_pkg_0.2.squashfs"],
+    "store": [{"name": "itch.io", "gameurl": "https://adamgryu.itch.io/a-short-hike", "developerurl": "https://adamgryu.itch.io"}],
+    "availability": "paid",
+    "reqs": [],
+    "arch": ["aarch64"],
+    "min_glibc": ""
+  }
+}
