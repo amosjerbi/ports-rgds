@@ -1,6 +1,6 @@
 ![Frog Color screenshot: village](screen-1.png) ![Frog Color screenshot: overworld](screen-2.png)
 
-# Frog Color v0.2
+# For whom the bell tolls - Gameboy re-color
 
 An IPS color patch for the Game Boy Color build of **Kaeru no Tame ni Kane wa Naru**. It adds color to overworld scenery, makes water blue, and gives the character red clothing in standing, crouching, and jumping poses while keeping white eye highlights in the relevant frames.
 
