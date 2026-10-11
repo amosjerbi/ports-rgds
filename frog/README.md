@@ -1,4 +1,4 @@
-![Frog Color screenshot: village](screen-1.png) ![Frog Color screenshot: overworld](screen-2.png)
+![Frog Color screenshot: village](screen-1.png)
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
