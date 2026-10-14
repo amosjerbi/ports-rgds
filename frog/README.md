@@ -1,4 +1,6 @@
-<img src="screens/Title.png" alt="For the Frog the Bell Tolls, colourised title screen" width="640">
+<p align="center">
+  <img src="screens/Title.png" alt="For the Frog the Bell Tolls, colourised title screen" width="640">
+</p>
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
