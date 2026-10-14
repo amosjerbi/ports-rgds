@@ -1,4 +1,6 @@
-![Frog Color screenshot: village](screen-1.png)
+| ![Arena: green ground, blue and red fighters](screen-1.png) | ![Castle approach: green frogs, pale town](screen-2.png) | ![Overworld: green trees, mammoth, yellow gold chunk](screen-3.png) |
+|:--:|:--:|:--:|
+| Arena | Castle steps | Overworld |
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
