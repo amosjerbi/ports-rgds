@@ -32,7 +32,7 @@ Applies to the original ROM only (not on top of an older patch). Colour fixes si
   apple, shield, hero body) now uses that red too.
 * **Crystal ball**: the glass is light blue like the water (its stand stays neutral dark grey).
   BG palette 7 colour 0 is cream so the stand block has no grey box.
-* **Treasure chests**: closed and open chest are both coin/chest yellow.
+* **Treasure chests**: closed and open chest are both coin/chest yellow, and so is the chest monster (mimic) sprite.
 * **Water / pool**: light-blue water palette also for the raised pool's basin tiles and the pool fill.
 * **Princess and Mandola portraits** get scene palettes (pink dress, blonde hair, purple cloak and lavender backdrop).
 * **Shop wares and pickups**: shield and apple red, knife with grey blade, egg white, heart pickup red; the pause-menu item
