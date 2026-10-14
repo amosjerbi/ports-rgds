@@ -2,12 +2,12 @@
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
-`frog-color-v0.9.ips` (latest; older builds are kept as `frog-color-v0.1`–`v0.4.ips`) turns the monochrome DMG ROM into a Game Boy Color
+`frog-color-v10.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
 (CGB-enhanced) game with full colour, while still booting on a plain DMG.
 
 * Apply to **your own** copy of the original ROM
   (SHA-1 `90bddff5d48eedad6ec5157946f602ae4170e0c6`, 512 KB, English version).
-* `python3 apply_patch.py apply original.gb frog-color-v0.9.ips frog-claude-color.gb`
+* `python3 apply_patch.py apply original.gb frog-color-v10.ips frog-claude-color.gb`
   (or any IPS patcher, e.g. Flips).
 * Run the result in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 
@@ -23,7 +23,7 @@
 
 ## Changelog
 
-### v0.9 (current, `frog-color-v0.9.ips`, 36,648 bytes)
+### v10 (current, `frog-color-v10.ips`, 36,648 bytes; the same colours as the former `old/frog-color-v0.9.ips` plus the chest monster)
 Applies to the original ROM only (not on top of an older patch). Colour fixes since v0.4:
 
 * **Lava** is red: the lava body and surface frames (`$16:$304-$30a`) use the red BG palette; their black pixels are now the
@@ -44,8 +44,8 @@ Applies to the original ROM only (not on top of an older patch). Colour fixes si
 Known limits: colour is per 8x8 tile, so a few outline pixels at tile edges take the neighbouring tile's colour (e.g. the
 bottom two glass rows of the crystal ball are a flat light blue).
 
-### v0.4 and earlier
-First full-colour builds (see the *What the patch does* section).
+### v0.1 – v0.4, v0.9 (`old/`)
+Earlier builds, kept for reference. The game's own pause-menu open/close animation is unchanged in all of them.
 
 ## Rebuilding / tuning colours
 `source/` holds my assembler, the hook code (`hooks.s`) and the palette/tile
