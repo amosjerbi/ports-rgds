@@ -1,11 +1,15 @@
-| ![Arena: green ground, blue and red fighters](screen-1.png) | ![Castle approach: green frogs, pale town](screen-2.png) | ![Overworld: green trees, mammoth, yellow gold chunk](screen-3.png) |
-|:--:|:--:|:--:|
-| Arena | Castle steps | Overworld |
+![For the Frog the Bell Tolls, colourised title screen](screens/Title.png)
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
 `frog-color-v12.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
 (CGB-enhanced) game with full colour, while still booting on a plain DMG.
+
+### Screens
+
+| ![Castle steps: green frogs, pale town](screens/Castle.png) | ![Overworld: green trees, mammoth, yellow gold chunk](screens/Mammoth.png) | ![Dialogue with the new font](screens/New%20font.png) |
+|:--:|:--:|:--:|
+| Castle steps | Overworld | Dialogue (new font) |
 
 * Apply to **your own** copy of the original ROM
   (SHA-1 `90bddff5d48eedad6ec5157946f602ae4170e0c6`, 512 KB, English version).
