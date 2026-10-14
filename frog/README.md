@@ -9,9 +9,9 @@
 
 ### Screens
 
-| ![Castle steps: green frogs, pale town](screens/Castle.png) | ![Overworld: green trees, mammoth, yellow gold chunk](screens/Mammoth.png) | ![Dialogue with the new font](screens/New%20font.png) |
+| ![Castle steps: green frogs, pale town](screens/Castle.png) | ![Ice cave: blue ice walls and icicles](screens/Ice.png) | ![Dialogue with the new font](screens/New%20font.png) |
 |:--:|:--:|:--:|
-| Castle steps | Overworld | Dialogue (new font) |
+| Castle steps | Ice cave | Dialogue (new font) |
 
 * Apply to **your own** copy of the original ROM
   (SHA-1 `90bddff5d48eedad6ec5157946f602ae4170e0c6`, 512 KB, English version).
