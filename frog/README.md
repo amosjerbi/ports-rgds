@@ -2,12 +2,12 @@
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
-`frog-color-v10.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
+`frog-color-v11.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
 (CGB-enhanced) game with full colour, while still booting on a plain DMG.
 
 * Apply to **your own** copy of the original ROM
   (SHA-1 `90bddff5d48eedad6ec5157946f602ae4170e0c6`, 512 KB, English version).
-* `python3 apply_patch.py apply original.gb frog-color-v10.ips frog-claude-color.gb`
+* `python3 apply_patch.py apply original.gb frog-color-v11.ips frog-claude-color.gb`
   (or any IPS patcher, e.g. Flips).
 * Run the result in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 
@@ -23,7 +23,25 @@
 
 ## Changelog
 
-### v10 (current, `frog-color-v10.ips`, 36,648 bytes; byte-identical to `old/frog-color-v0.9.ips`, renamed; all further changes go into this file)
+### v11 (current, `frog-color-v11.ips`, 36,413 bytes)
+Applies to the original ROM only (not on top of an older patch); the patched ROM has SHA-1
+`e12cb4bb0ff145d63fafca9b389ca7d197587e38`. Everything in v10 plus:
+
+* **Title and menus all gold**: the logo ribbon, "For the Frog the Bell Tolls", the bells, "(c)1992" and "Nintendo" lettering
+  are one gold-yellow class (this also removes the red/yellow colour leak across the ribbon), and the corner frame's
+  vines are gold instead of green.
+* **Diary screen**: the backdrop around the title and book is peach/tan instead of blue (water tiles are untouched).
+* **Dungeons and castles**: brick/stone palette (BG class 4) is now purple with a lavender highlight.
+* **Greens**: the grass/tree palette is a richer green; town trees, border hedges and grass tufts are green.
+* **Shop seller**: his head uses the neutral palette like his body (no more red fringe from the hero's palette).
+* **Eskimo (ice) village**: snow ground is icy blue, pines, houses and snowmen are purple.
+* **Eye-patch frog NPC** (bank `$12` tiles `$124-$12b`) is frog green.
+
+Notes: colour is per 8x8 tile, so tiles shared between areas change everywhere (the ice-village pines and snow tiles are
+also used by other forests). Colours were tuned from a colour reference video; the shop interiors are still warm cream and
+pink. v11 was built from a reconstructed assembly source of the ROM (not included here; it contains game code).
+
+### v10 (previous, now `old/frog-color-v10.ips`, 36,648 bytes; byte-identical to `old/frog-color-v0.9.ips`, renamed; all further changes go into this file)
 Applies to the original ROM only (not on top of an older patch). Colour fixes since v0.4:
 
 * **Lava** is red: the lava body and surface frames (`$16:$304-$30a`) use the red BG palette; their black pixels are now the
@@ -44,7 +62,7 @@ Applies to the original ROM only (not on top of an older patch). Colour fixes si
 Known limits: colour is per 8x8 tile, so a few outline pixels at tile edges take the neighbouring tile's colour (e.g. the
 bottom two glass rows of the crystal ball are a flat light blue).
 
-### v0.1 – v0.4, v0.9 (`old/`)
+### v0.1 – v0.4, v0.9, v10 (`old/`)
 Earlier builds, kept for reference. The game's own pause-menu open/close animation is unchanged in all of them.
 
 ## Rebuilding / tuning colours
