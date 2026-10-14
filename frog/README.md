@@ -23,7 +23,7 @@
 
 ## Changelog
 
-### v10 (current, `frog-color-v10.ips`, 36,648 bytes; the same colours as the former `old/frog-color-v0.9.ips` plus the chest monster)
+### v10 (current, `frog-color-v10.ips`, 36,648 bytes; byte-identical to `old/frog-color-v0.9.ips`, renamed; all further changes go into this file)
 Applies to the original ROM only (not on top of an older patch). Colour fixes since v0.4:
 
 * **Lava** is red: the lava body and surface frames (`$16:$304-$30a`) use the red BG palette; their black pixels are now the
