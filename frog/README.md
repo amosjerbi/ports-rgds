@@ -2,12 +2,12 @@
 
 # For the Frog the Bell Tolls — Game Boy Color colourisation patch
 
-`frog-color-v11.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
+`frog-color-v12.ips` (latest; older builds are in the `old/` folder) turns the monochrome DMG ROM into a Game Boy Color
 (CGB-enhanced) game with full colour, while still booting on a plain DMG.
 
 * Apply to **your own** copy of the original ROM
   (SHA-1 `90bddff5d48eedad6ec5157946f602ae4170e0c6`, 512 KB, English version).
-* `python3 apply_patch.py apply original.gb frog-color-v11.ips frog-claude-color.gb`
+* `python3 apply_patch.py apply original.gb frog-color-v12.ips frog-claude-color.gb`
   (or any IPS patcher, e.g. Flips).
 * Run the result in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 
@@ -23,7 +23,24 @@
 
 ## Changelog
 
-### v11 (current, `frog-color-v11.ips`, 36,413 bytes)
+### v12 (current, `frog-color-v12.ips`, 36,474 bytes)
+Applies to the original ROM only (not on top of an older patch); the patched ROM has SHA-1
+`70cecb6a7ee6bd77d0c62c78cf5aac22640ea2c0`. Everything in v11 plus:
+
+* **Palettes**: pink OBJ palette 4 (princess dress), richer green BG palette 1, purple BG palette 4 for rooms.
+* **Princess**: yellow hair, pink dress, neutral face in the overworld/cutscene frames; the portrait scene has a light-red
+  heart backdrop with pink/yellow princess (both portrait layouts are recognised).
+* **Snake boss**: red with peach outline and belly in all poses; **robot** enemy yellow; sword blade yellow.
+* **Rooms**: the throne/temple room is purple (floor, border corners, roses and statues); arena ground is green; the ice
+  cave is blue; the dungeon stones are purple.
+* **Hero details**: black pupil in the crawl/climb pose, white outline in that pose, black outline on the front pose of the
+  title screen; the boat hero's head is neutral skin, the boat stays green.
+* **Fixes**: frogs green in every pose, blue-NPC/inn floor neutral, shop/diary details.
+
+Notes: as before colour is per 8x8 tile, so shared tiles change in other areas too. Some frames of animated characters
+(the blue character on the title screen, other princess poses) are still unfinished.
+
+### v11 (previous, now `old/frog-color-v11.ips`, 36,413 bytes)
 Applies to the original ROM only (not on top of an older patch); the patched ROM has SHA-1
 `e12cb4bb0ff145d63fafca9b389ca7d197587e38`. Everything in v10 plus:
 
@@ -62,7 +79,7 @@ Applies to the original ROM only (not on top of an older patch). Colour fixes si
 Known limits: colour is per 8x8 tile, so a few outline pixels at tile edges take the neighbouring tile's colour (e.g. the
 bottom two glass rows of the crystal ball are a flat light blue).
 
-### v0.1 – v0.4, v0.9, v10 (`old/`)
+### v0.1 – v0.4, v0.9, v10, v11 (`old/`)
 Earlier builds, kept for reference. The game's own pause-menu open/close animation is unchanged in all of them.
 
 ## Rebuilding / tuning colours
