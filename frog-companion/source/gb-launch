@@ -1,0 +1,34 @@
+#!/bin/bash
+# GB-system launch wrapper. EmulationStation passes: ROM -Pgb --core=.. --emulator=.. --controllers=..
+# Lives next to frog-bottom (e.g. /storage/roms/ports/frog/). No .sh extension on purpose, so EmulationStation
+# does not offer it as a Ports entry.
+#
+#  * "For the Frog the Bell Tolls" with the gambatte or SameBoy core: runs the game in RetroArch on the top panel and starts
+#    frog-bottom, which shows the game's own pause menu (status, hold, items, keys) plus live life and coin on the
+#    bottom panel. It exits with the emulator.
+#  * Anything else: the stock launcher, unchanged.
+# Create "no-companion" next to this script to disable the bottom screen.
+ROM="$1"
+export SWAYSOCK=${SWAYSOCK:-/run/0-runtime-dir/sway-ipc.0.sock}
+D=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+TITLE=$(dd if="$ROM" bs=1 skip=308 count=13 2>/dev/null)   # header title at 0x134
+case " $* " in
+  *"--core=gambatte "*|*"--core=sameboy "*)
+    if [ "$TITLE" = "KAERUNOTAMENI" ] && [ ! -e "$D/no-companion" ]; then
+        . /etc/profile
+        # RetroArch's network command port (memory reads) is only open during this session.
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1 # RetroArch opens on the focused output: keep it on the top panel
+        SDL_VIDEODRIVER=wayland "$D/frog-bottom" "$ROM" ${FROG_SAVE:+"$FROG_SAVE"} > /tmp/frog-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        # EmulationStation keeps the lower panel off; put it back the way it was.
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi ;;
+esac
+exec /usr/bin/runemu.sh "$@"
