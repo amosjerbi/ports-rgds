@@ -1,0 +1,290 @@
+--- a/src/engine/include/gba/types.h
++++ b/src/engine/include/gba/types.h
+@@ -5,7 +5,7 @@
+ 
+ typedef uint8_t u8;
+ typedef uint16_t u16;
+-#if defined(TMC_N64) || defined(TMC_3DS)
++#if defined(TMC_N64) || defined(TMC_3DS) || defined(TMC_NDS)
+ /* mips64-newlib makes uint32_t 'unsigned long' — a type distinct from 'unsigned int'
+  * and from enum underlying types, which breaks function-prototype/enum compatibility
+  * the decomp relies on (it holds on x86 where uint32_t == unsigned int). Use plain
+@@ -17,7 +17,7 @@
+ typedef uint64_t u64;
+ typedef int8_t s8;
+ typedef int16_t s16;
+-#if defined(TMC_N64) || defined(TMC_3DS)
++#if defined(TMC_N64) || defined(TMC_3DS) || defined(TMC_NDS)
+ typedef int s32;
+ #else
+ typedef int32_t s32;
+--- a/src/port/port_rom.c
++++ b/src/port/port_rom.c
+@@ -1403,7 +1403,7 @@
+ 
+ void Port_LoadRom(const char* path) {
+     sLoadedRomPath[0] = '\0';
+-#ifndef TMC_N64
++#if !defined(TMC_N64) && !defined(TMC_NDS)
+     memset(sExtractedPages, 0, sizeof(sExtractedPages));
+ 
+ #ifndef TMC_3DS
+@@ -1550,8 +1550,9 @@
+                                                                    "The ROM file may be empty or unreadable.");
+     }
+ #else
+-    /* #N64: gRomData/gRomSize already point at the embedded cart ROM (set by
+-     * n64_main before calling Port_LoadRom). Skip all host file I/O. */
++    /* #N64 / #NDS: gRomData/gRomSize already point at the cart ROM (N64: set by
++     * n64_main; NDS: set by Nds_AttachSlot2Rom, GBA-slot bus at 0x08000000). Skip
++     * all host file I/O. */
+     (void)path;
+     if (!gRomData || gRomSize == 0) {
+         return;
+@@ -1643,9 +1644,11 @@
+         R->frameObjLists + R->frameObjListsSize <= gRomSize) {
+         memcpy(gFrameObjLists, &gRomData[R->frameObjLists], R->frameObjListsSize);
+         fprintf(stderr, "gFrameObjLists loaded (%u bytes from ROM 0x%X).\n", R->frameObjListsSize, R->frameObjLists);
++#ifndef TMC_NDS /* NDS: the cart is always mapped, so the 195 KB compile-time fallback is dropped */
+     } else if (gRomRegion == ROM_REGION_USA) {
+         memcpy(gFrameObjLists, kFrameObjListsData, R->frameObjListsSize);
+         fprintf(stderr, "WARNING: gFrameObjLists ROM range invalid; using compile-time fallback.\n");
++#endif
+     } else {
+         fprintf(stderr, "WARNING: gFrameObjLists ROM range invalid; regional table disabled.\n");
+     }
+--- a/src/port/port_second_screen.c
++++ b/src/port/port_second_screen.c
+@@ -1929,6 +1929,13 @@
+         default:
+             return "OFF";
+     }
++}
++
++/* Companion mode: the second screen runs beside a live emulator (tmc-bottom) instead of inside the engine,
++ * so only the settings that act on this screen, plus emulator save/load state, are offered. */
++static int sCompanionMode;
++void Port_SecondScreen_SetCompanionMode(int on) {
++    sCompanionMode = on;
+ }
+ 
+ /* The stored backdrop style, sanitised. config.json is hand-editable and
+@@ -1943,6 +1950,15 @@
+  * settings. Rows that cannot do anything in a build are omitted. */
+ static int SettingsPageRows(int page, uint8_t* out) {
+     int n = 0;
++    if (sCompanionMode) {
++        if (page == SS_SETTINGS_SCREEN) {
++            out[n++] = SS_SET_BACKDROP;
++        } else if (page == SS_SETTINGS_GAMEPLAY) {
++            out[n++] = SS_SET_CRESTS;
++            out[n++] = SS_SET_FLOOR_RETURN;
++        }
++        return n;
++    }
+     if (page == SS_SETTINGS_SCREEN) {
+ #ifdef TMC_3DS
+         out[n++] = SS_SET_ASPECT_RATIO;
+@@ -1986,7 +2002,7 @@
+         case SS_SETTINGS_GAMEPLAY:
+             return "GAMEPLAY";
+         case SS_SETTINGS_DEVELOPER:
+-            return "DEVELOPER";
++            return sCompanionMode ? "EMULATOR" : "DEVELOPER";
+         case SS_SETTINGS_OVERLAY:
+             return "OVERLAY";
+         case SS_SETTINGS_RANDOMIZER:
+@@ -2264,6 +2280,19 @@
+ 
+     float x0 = ix0 + 6 * u, x1 = ix1 - 6 * u;
+     float y0 = iy0 + headerH + 12 * u;
++    if (page == SS_SETTINGS_ROOT && sCompanionMode) {
++        static const char* const labels[3] = { "SCREEN", "GAMEPLAY", "EMULATOR" };
++        static const uint8_t pages[3] = { SS_SETTINGS_SCREEN, SS_SETTINGS_GAMEPLAY, SS_SETTINGS_DEVELOPER };
++        float gap = 14 * u;
++        float rowH = (iy1 - y0 - 2 * gap) / 3;
++        if (rowH > 124 * u)
++            rowH = 124 * u;
++        for (int i = 0; i < 3; ++i) {
++            float ry = y0 + i * (rowH + gap);
++            DrawSettingsNavRow(s, tl, x0, ry, x1, ry + rowH, labels[i], pages[i], u, ts);
++        }
++        return;
++    }
+     if (page == SS_SETTINGS_ROOT) {
+ #ifdef TMC_3DS
+         static const char* const labels[5] = { "SCREEN", "GAMEPLAY", "DEVELOPER", "RANDOMIZER", "UPDATE" };
+@@ -2292,6 +2321,21 @@
+         return;
+     }
+ #endif
++    if (page == SS_SETTINGS_DEVELOPER && sCompanionMode) {
++        float gap = 10 * u;
++        float rowH = (iy1 - y0 - gap) / 2;
++        if (rowH > 92 * u)
++            rowH = 92 * u;
++        char saveValue[16];
++        snprintf(saveValue, sizeof(saveValue), "%s", (int32_t)(dumpFlashUntil - tick) > 0 ? "DONE" : "SAVE");
++        DrawDeveloperActionRow(s, tl, x0, y0, x1, y0 + rowH, "SAVE STATE", saveValue, SS_ACT_DEVELOPER_DUMP, u, ts);
++        const char* loadValue = (int32_t)(loadStateFlashUntil - tick) > 0
++                                    ? Port_DumpState_ResultLabel((PortDumpStateResult)loadStateResult)
++                                    : "LOAD";
++        DrawDeveloperActionRow(s, tl, x0, y0 + rowH + gap, x1, y0 + 2 * rowH + gap, "LOAD STATE", loadValue,
++                               SS_ACT_DEVELOPER_LOAD, u, ts);
++        return;
++    }
+     if (page == SS_SETTINGS_DEVELOPER) {
+         float gap = 10 * u;
+         int rowCount = 3;
+@@ -2425,16 +2469,23 @@
+     int32_t titleScale = (int32_t)(2.2f * u);
+     if (titleScale < 1)
+         titleScale = 1;
+-    MenuTextCentered(s, "LOAD LATEST DUMP?", s->w / 2.0f, layout.titleY, titleScale, SS_TEXT_NAVY);
++    MenuTextCentered(s, sCompanionMode ? "LOAD SAVED STATE?" : "LOAD LATEST DUMP?", s->w / 2.0f, layout.titleY,
++                     titleScale, SS_TEXT_NAVY);
+ 
+-    static const char* const lines[] = {
++    static const char* const dumpLines[] = {
+         "THE LATEST DUMP IN THE",        "DUMPS FOLDER WILL REPLACE", "THE CURRENT GAME STATE.",
+         "UNSAVED PROGRESS MAY BE LOST.", "THE GAME WILL RESTART.",
++    };
++    static const char* const emuLines[] = {
++        "THE STATE YOU SAVED WITH",      "SAVE STATE WILL REPLACE", "THE CURRENT GAME STATE.",
++        "UNSAVED PROGRESS MAY BE LOST.", "",
+     };
++    const char* const* lines = sCompanionMode ? emuLines : dumpLines;
++    const size_t lineCount = 5;
+     int32_t textScale = (int32_t)(1.55f * u);
+     if (textScale < 1)
+         textScale = 1;
+-    for (size_t i = 0; i < sizeof(lines) / sizeof(lines[0]); ++i) {
++    for (size_t i = 0; i < lineCount; ++i) {
+         MenuTextCentered(s, lines[i], s->w / 2.0f, layout.firstLineY + i * layout.lineStep, textScale, SS_TEXT_INK);
+     }
+ 
+@@ -2933,7 +2984,7 @@
+  * average with ~89 ms peaks, which is the largest CPU cost left on the Old 3DS,
+  * but the total alone does not say which phase to attack -- and guessing that
+  * from reading the code is how earlier optimisation attempts went wrong. */
+-extern unsigned long long Platform3DS_SystemTick(void);
++extern uint64_t Platform3DS_SystemTick(void); /* uint64_t: matches platform_3ds.h on LP64 (unsigned long) and ILP32 (unsigned long long) */
+ enum { SS_PHASE_BACKDROP, SS_PHASE_PANEL, SS_PHASE_SIDEBAR, SS_PHASE_TABBAR, SS_PHASE_COUNT };
+ static unsigned long long sSsPhaseTicks[SS_PHASE_COUNT];
+ static unsigned long long sSsPhaseMax[SS_PHASE_COUNT];
+--- a/src/port/port_types.h
++++ b/src/port/port_types.h
+@@ -12,7 +12,7 @@
+ // Type definitions for GBA-style fixed-width types
+ typedef uint8_t u8;
+ typedef uint16_t u16;
+-#if defined(TMC_N64) || defined(TMC_3DS)
++#if defined(TMC_N64) || defined(TMC_3DS) || defined(TMC_NDS)
+ typedef unsigned int u32; /* match gba/types.h: mips-newlib uint32_t is 'unsigned long' */
+ #else
+ typedef uint32_t u32;
+@@ -21,7 +21,7 @@
+ 
+ typedef int8_t s8;
+ typedef int16_t s16;
+-#if defined(TMC_N64) || defined(TMC_3DS)
++#if defined(TMC_N64) || defined(TMC_3DS) || defined(TMC_NDS)
+ typedef int s32;
+ #else
+ typedef int32_t s32;
+@@ -44,7 +44,7 @@
+ PORT_STATIC_ASSERT(sizeof(s64) == 8, "s64 must be 8 bytes");
+ // Pointer assertions — the PC port targets 64-bit systems only. The N64
+ // target is the lone 32-bit-pointer consumer of this header.
+-#if !defined(TMC_N64) && !defined(TMC_3DS)
++#if !defined(TMC_N64) && !defined(TMC_3DS) && !defined(TMC_NDS)
+ PORT_STATIC_ASSERT(sizeof(void*) == 8, "PC port targets 64-bit systems only");
+ #endif
+ 
+--- a/src/port/ppu/include/virtuappu.h
++++ b/src/port/ppu/include/virtuappu.h
+@@ -31,11 +31,19 @@
+     VIRTUAPPU_MAX_FRAME_HEIGHT = 360,
+     VIRTUAPPU_VRAM_SIZE = 4 * 1024 * 1024,
+ #endif
+-    VIRTUAPPU_FRAME_BUFFER_SIZE = VIRTUAPPU_MAX_FRAME_WIDTH * VIRTUAPPU_MAX_FRAME_HEIGHT
++#ifdef TMC_NDS
++    /* NDS: the port always supplies an external output buffer and binds the engine's GBA VRAM,
++     * so the built-in scratch buffers would only waste ~250 KB of the 4 MB RAM. */
++    VIRTUAPPU_FRAME_BUFFER_SIZE = 1,
++    VIRTUAPPU_VRAM_BUFFER_SIZE = 1
++#else
++    VIRTUAPPU_FRAME_BUFFER_SIZE = VIRTUAPPU_MAX_FRAME_WIDTH * VIRTUAPPU_MAX_FRAME_HEIGHT,
++    VIRTUAPPU_VRAM_BUFFER_SIZE = VIRTUAPPU_VRAM_SIZE
++#endif
+ };
+ 
+ extern uint32_t virtuappu_frame_buffer[VIRTUAPPU_FRAME_BUFFER_SIZE];
+-extern uint8_t virtuappu_vram[VIRTUAPPU_VRAM_SIZE];
++extern uint8_t virtuappu_vram[VIRTUAPPU_VRAM_BUFFER_SIZE];
+ extern PPUMemory virtuappu_registers;
+ 
+ void virtuappu_reset(void);
+--- a/src/port/ppu/src/mode1.c
++++ b/src/port/ppu/src/mode1.c
+@@ -16,7 +16,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
+-#ifdef TMC_3DS
++#if defined(TMC_3DS) && !defined(TMC_NDS) && !defined(TMC_RGDS)
+ #include <3ds.h>
+ #endif
+ 
+@@ -96,7 +96,11 @@
+  * degraded/short room data can't read out of bounds.
+  * ------------------------------------------------------------------------- */
+ static uint8_t mode1_default_io_mem[MODE1_IO_MEM_SIZE];
++#ifdef TMC_NDS
++static uint8_t mode1_default_vram[1]; /* engine VRAM is always bound on the NDS; saves 96 KB */
++#else
+ static uint8_t mode1_default_vram[MODE1_VRAM_SIZE];
++#endif
+ static uint16_t mode1_default_bg_palette[MODE1_PALETTE_COLORS];
+ static uint16_t mode1_default_obj_palette[MODE1_PALETTE_COLORS];
+ static uint16_t mode1_default_oam_mem[MODE1_OAM_HALFWORDS];
+@@ -467,8 +471,8 @@
+  * threads while still seeing the correct HDMA-mutated register state
+  * (BG SCROLL, BLDY, etc.) for that scanline. NULL on the main / setup
+  * thread keeps the existing single-threaded behavior intact. */
+-#ifdef TMC_N64
+-/* N64: single-threaded (no OpenMP) and bare-metal (no TLS). __thread compiles to
++#if defined(TMC_N64) || defined(TMC_NDS)
++/* N64/NDS: single-threaded (no OpenMP) and bare-metal (no TLS). __thread compiles to
+  * RDHWR $29, which the VR4300 (MIPS III) doesn't implement -> Reserved Instruction.
+  * Single-threaded rendering makes plain file-scope storage correct here. */
+ #define VPPU_TLS
+@@ -2986,7 +2990,7 @@
+     }
+ }
+ 
+-#ifdef TMC_3DS
++#if defined(TMC_3DS) && !defined(TMC_NDS) && !defined(TMC_RGDS)
+ typedef struct Mode1Worker {
+     LightEvent start;
+     LightEvent done;
+@@ -3256,7 +3260,7 @@
+     const Mode1RenderLinesContext render_context = {
+         affine, per_line_io, dispcnt, frame_width, frame_height, per_line_dispcnt, io_snapshots, aff_ref_x, aff_ref_y,
+     };
+-#ifdef TMC_3DS
++#if defined(TMC_3DS) && !defined(TMC_NDS) && !defined(TMC_RGDS)
+     mode1_render_lines_3ds(&render_context);
+ #else
+ #pragma omp parallel for schedule(static)
+--- a/src/port/ppu/src/virtuappu.c
++++ b/src/port/ppu/src/virtuappu.c
+@@ -16,7 +16,7 @@
+ #include "modes_impl.h"
+ 
+ uint32_t virtuappu_frame_buffer[VIRTUAPPU_FRAME_BUFFER_SIZE];
+-uint8_t virtuappu_vram[VIRTUAPPU_VRAM_SIZE];
++uint8_t virtuappu_vram[VIRTUAPPU_VRAM_BUFFER_SIZE];
+ PPUMemory virtuappu_registers;
+ 
+ void virtuappu_reset(void) {
