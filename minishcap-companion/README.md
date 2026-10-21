@@ -44,9 +44,9 @@ You need your **own** USA ROM (SHA-1 `b4bd50e4131b027c334547b4524e2dbbd4227130`)
 
 ```sh
 git clone https://github.com/EstebanPdN/zelda-tmc-3ds && cd zelda-tmc-3ds
-patch -p1 < /path/to/ports-rgds/minishcap/source/upstream-changes.patch
-cp -R /path/to/ports-rgds/minishcap/source/platform/rgds platform/
-cp -R /path/to/ports-rgds/minishcap/source/docs/. docs/
+patch -p1 < /path/to/ports-rgds/minishcap-companion/source/upstream-changes.patch
+cp -R /path/to/ports-rgds/minishcap-companion/source/platform/rgds platform/
+cp -R /path/to/ports-rgds/minishcap-companion/source/docs/. docs/
 ./platform/rgds/build.sh          # -> platform/rgds/build/tmc-bottom and tmc-rgds (aarch64)
 ```
 The container is arm64 Debian trixie (glibc 2.41, the same as ROCKNIX) and links the device's own SDL2.
