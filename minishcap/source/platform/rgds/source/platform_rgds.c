@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "display_rgds.h"
 #include "platform_3ds.h"
@@ -118,4 +119,25 @@ void* linearAlloc(size_t size) {
 }
 void linearFree(void* p) {
     free(p);
+}
+
+const char* Rgds_DataDir(void) {
+    static char dir[1024];
+    if (!dir[0]) {
+        const char* forced = getenv("RGDS_DATA_DIR");
+        if (forced && *forced) {
+            snprintf(dir, sizeof dir, "%s", forced);
+        } else {
+            ssize_t n = readlink("/proc/self/exe", dir, sizeof dir - 1);
+            if (n > 0) {
+                dir[n] = 0;
+                char* slash = strrchr(dir, '/');
+                if (slash)
+                    *slash = 0;
+            } else {
+                snprintf(dir, sizeof dir, ".");
+            }
+        }
+    }
+    return dir;
 }

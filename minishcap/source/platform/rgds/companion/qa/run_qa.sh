@@ -1,5 +1,5 @@
 #!/bin/bash
-# usage: DEVICE=<ip> [TAPS="ms,x,y;.."] [TOUCHSIM="s,x,y;.."] [SHOTS="s1 s2"] [LS=sec] [QUIT=sec] [CPUAT=sec] run_qa.sh <outdir> <seconds>
+# usage: DEVICE=<ip> [TMC_DIR=/storage/roms/ports/tmc-rgds] [TAPS="ms,x,y;.."] [TOUCHSIM="s,x,y;.."] [SHOTS="s1 s2"] [LS=sec] [QUIT=sec] [CPUAT=sec] run_qa.sh <outdir> <seconds>
 # Launches Minish Cap through the GBA wrapper with EmulationStation's own environment. See remote_run.sh.
 OUT=$1; SECS=${2:-60}
 D=$(cd "$(dirname "$0")" && pwd)

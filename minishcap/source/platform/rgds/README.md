@@ -46,16 +46,19 @@ python3 platform/rgds/companion/tools/gen_layout.py platform/rgds/companion/tool
 `tools/tmc_linker.ld` is zeldaret/tmc's `linker.ld` (GPL-3.0), the source of the RAM addresses.
 
 ## Install on the device
-Everything lives in `/storage/.config/tmc-rgds/` (no Ports entry):
+Everything lives in one folder, `/storage/roms/ports/tmc-rgds/` (the ports folder, but **not** a Ports-menu entry:
+EmulationStation only lists `.sh`/`.appimage` files there, and the wrapper has no extension on purpose):
 
-* `tmc-rgds`, `tmc-bottom` - the binaries; `gba-launch.sh` - the launch wrapper (`companion/gba-launch.sh`).
-* `es_systems.cfg` (`/storage/.config/emulationstation/`): in the `gba` system, change the command to
-  `/storage/.config/tmc-rgds/gba-launch.sh %ROM% -P%SYSTEM% ...` (was `/usr/bin/runemu.sh %ROM% ...`) and add
-  `<core>minishcap-rgds</core>` under the `retroarch` emulator's cores.
+* `tmc-rgds`, `tmc-bottom` - the binaries; `gba-launch` - the launch wrapper (`companion/gba-launch`).
+* Saves and settings (`tmc.sav`, `tmc.ini`, `tmc-bottom.ini`) are written in that same folder: the programs use
+  the folder they run from (`RGDS_DATA_DIR` overrides it), so the whole port can be moved or backed up as one.
+* `es_systems.cfg` (`/storage/.config/emulationstation/`, back it up first): in the `gba` system, change the
+  command to `/storage/roms/ports/tmc-rgds/gba-launch %ROM% -P%SYSTEM% ...` (was `/usr/bin/runemu.sh %ROM% ...`)
+  and add `<core>minishcap-rgds</core>` under the `retroarch` emulator's cores.
 * The wrapper starts `tmc-bottom` for Minish Cap with the mGBA core, opens RetroArch's network command port only
-  for that session (`network_cmd_enable` in `retroarch.cfg`), closes it afterwards, and puts the lower panel
-  back to off (EmulationStation keeps it off). Create `/storage/.config/tmc-rgds/no-companion` to get plain mGBA.
-* Saves/settings for the native build and the companion go in the same folder.
+  for that session (`network_cmd_enable` in `retroarch.cfg`), closes it afterwards, focuses the top panel before
+  launching (new windows open on the focused output) and puts the lower panel back to off (EmulationStation keeps
+  it off). Create an empty `no-companion` file next to the wrapper to get plain mGBA.
 
 ## Settings on the second screen
 In mGBA mode only options that act on this screen are shown: SCREEN (panel backdrop), GAMEPLAY (windcrest

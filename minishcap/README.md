@@ -52,18 +52,20 @@ cp -R /path/to/ports-rgds/minishcap/source/docs/. docs/
 The container is arm64 Debian trixie (glibc 2.41, the same as ROCKNIX) and links the device's own SDL2.
 
 ## Install on the RG DS
-Everything lives in `/storage/.config/tmc-rgds/`; nothing goes in the Ports folder.
+Everything lives in one folder, `/storage/roms/ports/tmc-rgds/`. It is **not** a Ports-menu entry:
+EmulationStation only lists `.sh`/`.appimage` files there, and the wrapper has no extension on purpose.
 
-1. Copy `tmc-bottom`, `tmc-rgds` and `source/platform/rgds/companion/gba-launch.sh` there (`chmod +x`).
+1. Copy `tmc-bottom`, `tmc-rgds` and `source/platform/rgds/companion/gba-launch` into
+   `/storage/roms/ports/tmc-rgds/` (`chmod +x`). Saves and settings are written in that same folder.
 2. Put your ROM in `/storage/roms/gba/`.
 3. Back up `/storage/.config/emulationstation/es_systems.cfg`, then in the `gba` system:
-   * change the command to `/storage/.config/tmc-rgds/gba-launch.sh %ROM% -P%SYSTEM% --core=%CORE% --emulator=%EMULATOR% --controllers="%CONTROLLERSCONFIG%"`
+   * change the command to `/storage/roms/ports/tmc-rgds/gba-launch %ROM% -P%SYSTEM% --core=%CORE% --emulator=%EMULATOR% --controllers="%CONTROLLERSCONFIG%"`
    * add `<core>minishcap-rgds</core>` under the `retroarch` emulator's cores.
 4. Restart EmulationStation and launch Minish Cap from the GBA list. The mGBA core opens the companion; the
    `minishcap-rgds` core opens the native build.
 
 The wrapper opens RetroArch's network port only while Minish Cap runs, closes it afterwards, and powers the lower
-panel off again. Create `/storage/.config/tmc-rgds/no-companion` to get plain mGBA.
+panel off again. Create an empty `no-companion` file next to it to get plain mGBA.
 
 ## Status
 Tested on a real RG DS: launch exactly as EmulationStation does it, map/quest/items/settings by touch (software

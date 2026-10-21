@@ -10,7 +10,7 @@ if [ -n "$TOUCHSIM" ]; then
 fi
 cd /tmp
 (systemd-inhibit --what=idle:sleep --why=tmc-qa sleep $((SECS+30)) >/dev/null 2>&1 &)
-setsid nohup env -i $ESVARS RGDS_TEST_TAPS="$TAPS" RGDS_TOUCH_DEV="$TOUCHDEV" sh -c "/storage/.config/tmc-rgds/gba-launch.sh /storage/roms/gba/Legend\ of\ Zelda,\ The\ -\ The\ Minish\ Cap\ \(USA\).gba -Pgba --core=mgba --emulator=retroarch --controllers=\"\"" >/tmp/qa_wrap.log 2>&1 < /dev/null &
+setsid nohup env -i $ESVARS RGDS_TEST_TAPS="$TAPS" RGDS_TOUCH_DEV="$TOUCHDEV" sh -c "${TMC_DIR:-/storage/roms/ports/tmc-rgds}/gba-launch /storage/roms/gba/Legend\ of\ Zelda,\ The\ -\ The\ Minish\ Cap\ \(USA\).gba -Pgba --core=mgba --emulator=retroarch --controllers=\"\"" >/tmp/qa_wrap.log 2>&1 < /dev/null &
 udp() { python3 -c "
 import socket,sys;s=socket.socket(socket.AF_INET,socket.SOCK_DGRAM);s.sendto(sys.argv[1].encode(),('127.0.0.1',55355))" "$1"; }
 cpu() { awk '{print $14+$15}' /proc/$1/stat 2>/dev/null; }

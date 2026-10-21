@@ -20,7 +20,6 @@ bool RamMirror_Update(void);
 void Port_SecondScreen_SetCompanionMode(int on);
 void Port_SecondScreen_3DS_OnTap(int x, int y, int longPress);
 
-#define DATA_DIR "/storage/.config/tmc-rgds"
 #define MAX_SILENT_SECONDS 20 /* once connected: exit if RetroArch stays unreachable this long (it closed) */
 #define STARTUP_GRACE_SECONDS 120 /* before the first connection: RetroArch is still booting */
 
@@ -29,8 +28,8 @@ int main(int argc, char** argv) {
         fprintf(stderr, "usage: tmc-bottom <rom.gba>\n");
         return 2;
     }
-    if (chdir(DATA_DIR) != 0)
-        fprintf(stderr, "[bottom] warning: cannot enter " DATA_DIR "\n");
+    if (chdir(Rgds_DataDir()) != 0)
+        fprintf(stderr, "[bottom] warning: cannot enter %s\n", Rgds_DataDir());
     if (!RaClient_Open("127.0.0.1", 55355)) {
         fprintf(stderr, "[bottom] cannot open the RetroArch command socket\n");
         return 1;

@@ -19,7 +19,6 @@ void Port_PPU_Shutdown(void);
 void AgbMain(void);
 
 #define DEFAULT_ROM_DIR "/storage/roms/gba"
-#define DATA_DIR "/storage/.config/tmc-rgds"
 
 static int IsMinishCap(const char* path) {
     FILE* f = fopen(path, "rb");
@@ -66,9 +65,9 @@ int main(int argc, char** argv) {
         return 1;
     }
     /* Saves and settings are written relative to the working directory. */
-    mkdir(DATA_DIR, 0755);
-    if (chdir(DATA_DIR) != 0)
-        fprintf(stderr, "warning: cannot enter " DATA_DIR "; saves go to the current directory\n");
+    mkdir(Rgds_DataDir(), 0755);
+    if (chdir(Rgds_DataDir()) != 0)
+        fprintf(stderr, "warning: cannot enter %s; saves go to the current directory\n", Rgds_DataDir());
 
     if (!RgdsDisplay_Init())
         return 1;

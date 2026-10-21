@@ -19,3 +19,7 @@ bool RgdsDisplay_PumpEvents(void);
 uint16_t RgdsDisplay_KeyInput(void);   /* GBA KEYINPUT layout, active low */
 uint32_t RgdsDisplay_KeysDownMask(void); /* edges since last call, GBA bit layout (active high) */
 void RgdsDisplay_LeftStick(float* x, float* y);
+
+/* Folder for saves and settings: the directory holding the executable (so the whole port can live in one
+ * folder, e.g. /storage/roms/ports/tmc-rgds), or $RGDS_DATA_DIR. Returned string stays valid. */
+const char* Rgds_DataDir(void);

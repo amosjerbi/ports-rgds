@@ -19,6 +19,7 @@ Distilled from this folder's project. Reuse the approach, not the exact numbers.
 - ES launches with `SDL_VIDEO_DISPLAY_PRIORITY=DSI-2,DSI-1`; SDL display 0 = top, 1 = bottom.
 - Two Goodix touch controllers, one per panel, each 0..639 x 0..479. `fe5e0000.i2c` = bottom. ES attaches them to another Wayland seat than SDL binds, so **read the bottom node from evdev** instead of SDL touch events.
 - `/usr/bin` is read-only (squashfs). Customise via `/storage/.config/emulationstation/es_systems.cfg` (change the `gba` command to a wrapper, add a core) and `/storage/.config/system/configs/system.cfg` (per-game core).
+- Install everything in **one folder under `/storage/roms/ports/tmc-rgds/`** (binaries, wrapper, saves/settings: the programs use the folder they run from). Name the wrapper without `.sh` so ES does not list it as a Ports entry (ports extensions are `.sh .appimage`).
 
 ## Architecture
 1. RetroArch runs the unmodified ROM with the mGBA core on the top panel.
@@ -27,7 +28,7 @@ Distilled from this folder's project. Reuse the approach, not the exact numbers.
 4. The companion copies those regions into the engine's own structures and runs the unchanged snapshot publisher and painter, then draws 640x480 on the bottom panel.
 5. Write-back: tap-to-equip runs the engine's `ForceEquipItem` on the mirrored copy; diff the equipped bytes afterwards and push them with `WRITE_CORE_MEMORY`, plus the two HUD refresh flags (`gHUD.unk_13/14 = 0x7f`).
 6. Settings > EMULATOR drives RetroArch `SAVE_STATE_SLOT 9` / `LOAD_STATE_SLOT 9` (slot 9 so the player's own states are never touched). Settings rows that do nothing in this mode are hidden (`Port_SecondScreen_SetCompanionMode`).
-7. `gba-launch.sh` wraps the GBA launch: Minish Cap (`BZME`) + mGBA core starts the companion beside stock `runemu.sh`, opens the network port only for that session, then restores `network_cmd_enable=false` and powers `DSI-1` off.
+7. `gba-launch` wraps the GBA launch: Minish Cap (`BZME`) + mGBA core focuses the top output (new windows open on the focused output), starts the companion beside stock `runemu.sh`, opens the network port only for that session, then restores `network_cmd_enable=false` and powers `DSI-1` off.
 
 ## Pitfalls (each one cost real debugging time)
 - **`pkill -x` does not work on BusyBox**; use `pkill -9 retroarch`. Stale RetroArch instances **all bind UDP 55355** and answer each other's reads, giving nonsense that looks like a code bug. Always assert `pidof retroarch | wc -w` is 1.
