@@ -24,6 +24,7 @@ static uint32_t sPrevHeld;
 static uint32_t sDownEdges;
 static float sStickX, sStickY;
 static bool sQuit;
+static bool sIgnoreQuitKeys; /* companion: RetroArch hotkey combos (Guide + button) must not close it */
 static int sTouchFd = -1; /* bottom-panel touchscreen, read straight from evdev */
 static int sTouchX, sTouchY;
 static bool sTouchNew, sTouchHaveX, sTouchHaveY;
@@ -99,8 +100,9 @@ static void PumpTouch(void) {
                     sTouchY = ev[i].value;
                     sTouchHaveY = true;
                 } else if (ev[i].code == ABS_MT_TRACKING_ID && ev[i].value >= 0) {
-                    sTouchNew = true; /* a finger just landed */
-                    sTouchHaveX = sTouchHaveY = false;
+                    /* a finger just landed. Keep the last position: the kernel only reports an axis that changed,
+                     * so a tap at the same X or Y as the previous one carries no such coordinate. */
+                    sTouchNew = true;
                 }
             } else if (ev[i].type == EV_KEY && ev[i].code == BTN_TOUCH && ev[i].value == 1) {
                 sTouchNew = true;
@@ -119,6 +121,7 @@ bool RgdsDisplay_Init(void) {
 }
 
 bool RgdsDisplay_InitBottomOnly(void) {
+    sIgnoreQuitKeys = true;
     return InitImpl(false);
 }
 
@@ -275,7 +278,7 @@ bool RgdsDisplay_PumpEvents(void) {
                 sQuit = true;
                 break;
             case SDL_CONTROLLERBUTTONDOWN:
-                if (e.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE)
+                if (e.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE && !sIgnoreQuitKeys)
                     sQuit = true;
                 sHeld |= ButtonBit((SDL_GameControllerButton)e.cbutton.button);
                 break;
@@ -293,7 +296,7 @@ bool RgdsDisplay_PumpEvents(void) {
                     sPads[e.cdevice.which] = SDL_GameControllerOpen(e.cdevice.which);
                 break;
             case SDL_KEYDOWN:
-                if (e.key.keysym.sym == SDLK_ESCAPE)
+                if (e.key.keysym.sym == SDLK_ESCAPE && !sIgnoreQuitKeys)
                     sQuit = true;
                 if (!e.key.repeat)
                     sHeld |= KeyBit(e.key.keysym.sym);
