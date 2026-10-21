@@ -10,6 +10,8 @@
 #include <SDL2/SDL.h>
 #include <fcntl.h>
 #include <linux/input.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -436,6 +438,40 @@ static bool TapCell(int row, int col) {
     return writes > 0;
 }
 
+/* The diary (bottom-right cell) is the game's save screen: it has to open in the LIVE game. RetroArch has no memory
+ * trick for that, but its "network remote" (UDP 55400, enabled by gb-launch for the session) takes pad buttons:
+ * Start opens the pause menu, then right x3, down x2, A on the diary cell. */
+static void PadButton(int fd, int id) {
+    struct { int port, device, index, id; unsigned short state; } m = { 0, 1 /* RETRO_DEVICE_JOYPAD */, 0, id, 1 };
+    struct sockaddr_in to = { .sin_family = AF_INET, .sin_port = htons(55400), .sin_addr.s_addr = htonl(INADDR_LOOPBACK) };
+    sendto(fd, &m, sizeof m, 0, (struct sockaddr*)&to, sizeof to);
+    SDL_Delay(150);
+    m.state = 0;
+    sendto(fd, &m, sizeof m, 0, (struct sockaddr*)&to, sizeof to);
+    SDL_Delay(250);
+}
+
+static bool OpenDiary(void) {
+    enum { PAD_START = 3, PAD_DOWN = 5, PAD_RIGHT = 7, PAD_A = 8 }; /* RETRO_DEVICE_ID_JOYPAD_* */
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return false;
+    /* RetroArch pauses while its window is not focused (the companion window may hold the focus): give it back */
+    if (system("swaymsg '[app_id=\"com.libretro.RetroArch\"] focus' >/dev/null 2>&1") != 0)
+        fprintf(stderr, "[frog] diary: could not focus RetroArch\n");
+    SDL_Delay(800);
+    PadButton(fd, PAD_START);
+    SDL_Delay(700); /* menu opening */
+    for (int i = 0; i < 3; i++)
+        PadButton(fd, PAD_RIGHT);
+    for (int i = 0; i < 2; i++)
+        PadButton(fd, PAD_DOWN);
+    PadButton(fd, PAD_A);
+    close(fd);
+    fprintf(stderr, "[frog] diary: opened in the live game\n");
+    return true;
+}
+
 /* ------------------------------------------------------------------ main */
 static uint8_t* ReadFile(const char* path, size_t* n) {
     FILE* f = fopen(path, "rb");
@@ -596,7 +632,7 @@ int main(int argc, char** argv) {
                         CellFromTap(tx, ty, &row, &col));
             if (tapped && ready && connected && CellFromTap(tx, ty, &row, &col)) {
                 const Uint32 t0 = SDL_GetTicks();
-                bool acted = TapCell(row, col);
+                bool acted = (row == 2 && col == 3) ? (OpenDiary(), false) : TapCell(row, col);
                 fprintf(stderr, "[frog] tap handled in %u ms (%lu frames run in total)\n", SDL_GetTicks() - t0, Lr_FramesRun());
                 if (acted) {
                     pendingRefresh = true; /* the live record changed: redraw the menu from it */

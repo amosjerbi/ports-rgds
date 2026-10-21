@@ -53,6 +53,9 @@ The wrapper starts the companion only for this game (header title `KAERUNOTAMENI
 while it runs, and puts the lower panel back to off afterwards. Every other Game Boy game and core goes to the stock
 launcher unchanged. An empty `no-companion` file next to the wrapper disables it.
 
+Tapping the **diary** (bottom-right icon) opens the game's save screen in the live game: the companion refocuses RetroArch and
+presses Start, the arrows and A through RetroArch's network remote, which the wrapper also enables only for the session.
+
 ## Status
 Tested on a real RG DS (gambatte and SameBoy): the menu matches the game's own, live updates, tap-to-use with
 write-back, recovery when an action leaves a sub-screen, CPU about 4% of a core, 37 MB. Not tested: a real fingertip

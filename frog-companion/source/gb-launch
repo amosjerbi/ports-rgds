@@ -19,13 +19,15 @@ case " $* " in
         # RetroArch's network command port (memory reads) is only open during this session.
         RACFG=/storage/.config/retroarch/retroarch.cfg
         sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        # the diary icon presses pad buttons through RetroArch's network remote (UDP 55400), also session-only
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
         swaymsg "focus output DSI-2" >/dev/null 2>&1 # RetroArch opens on the focused output: keep it on the top panel
         SDL_VIDEODRIVER=wayland "$D/frog-bottom" "$ROM" ${FROG_SAVE:+"$FROG_SAVE"} > /tmp/frog-bottom.log 2>&1 &
         CP=$!
         /usr/bin/runemu.sh "$@"
         RC=$?
         kill $CP 2>/dev/null; wait $CP 2>/dev/null
-        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|; s|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
         # EmulationStation keeps the lower panel off; put it back the way it was.
         swaymsg "output DSI-1 power off" >/dev/null 2>&1
         exit $RC

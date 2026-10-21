@@ -55,3 +55,10 @@ live game's memory (`PKS="t:addr:bytes;..."`), capture both panels and sample CP
   `frog-color.srm` around tests.
 * Detect the menu by its bottom rows (panels vs the black status bar), never by counting Start presses, and let the
   game's fade-in finish before capturing.
+
+## Diary (save screen)
+
+The bottom-right cell of the SELECT grid is the diary. It opens the game's save screen in the **live** game: the companion
+refocuses RetroArch (it pauses when unfocused) and presses Start, right x3, down x2, A through RetroArch's network remote
+(UDP 55400). `gb-launch` turns `network_remote_enable` / `network_remote_enable_user_p1` on for the session only and
+puts them back to `false` afterwards.
