@@ -9,7 +9,7 @@
 #  * Minish Cap with the "minishcap-rgds" core: the native dual-screen build (tmc-rgds, no emulator).
 #  * Anything else: the stock launcher, unchanged.
 # Create "no-companion" next to this script to run plain mGBA for Minish Cap.
-#  * Aria of Sorrow with the mGBA core: starts aos-bottom from /storage/roms/ports/aos-companion (see aria-companion/).
+#  * Aria of Sorrow with the mGBA core: starts aos-bottom from /storage/roms/ports/aos-companion (see aria-of-sorrow-companion/).
 ROM="$1"
 AOSDIR=/storage/roms/ports/aos-companion
 export SWAYSOCK=${SWAYSOCK:-/run/0-runtime-dir/sway-ipc.0.sock}

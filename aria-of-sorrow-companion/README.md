@@ -3,6 +3,12 @@
 Touch companion for *Castlevania: Aria of Sorrow (USA)* on the Anystream RG DS (ROCKNIX). The game runs in
 RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (DSI-1) and shows five tabs:
 
+<p>
+<img src="screenshots/soul-set.png" width="320"> <img src="screenshots/equip.png" width="320">
+<img src="screenshots/item.png" width="320"> <img src="screenshots/ability.png" width="320">
+<img src="screenshots/enemy-list.png" width="320"> <img src="screenshots/enemy-detail.png" width="320">
+</p>
+
 | Tab | What it does |
 | --- | --- |
 | SOUL SET | Bullet / Guardian / Enchant: owned souls with counts, tap to equip (or clear) |
