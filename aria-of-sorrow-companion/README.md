@@ -21,7 +21,7 @@ Lists scroll by dragging or with the arrow buttons. The header shows level, HP/M
 Nothing from the ROM is shipped: names, descriptions and enemy data are read from the running game's ROM over RetroArch.
 
 ## How it works
-Like the Minish Cap companion in `platform/rgds/`: it talks to RetroArch's network command interface (UDP 55355,
+It talks to RetroArch's network command interface (UDP 55355,
 `READ_CORE_MEMORY` / `WRITE_CORE_MEMORY`), reads touch straight from the bottom panel's evdev node, and the GBA wrapper
 (`gba-launch`) starts it with the game, opens the command port only for that session and closes it afterwards.
 
@@ -36,9 +36,10 @@ and accessory `0x0201326D` (item-91); ability switches are a bit mask at `0x0201
 ./build.sh                 # arm64 Debian trixie container (needs Docker/colima) -> build/aos-bottom
 DEVICE=192.168.0.105 ./deploy.sh   # copies aos-bottom + the device's DejaVuSans.ttf to /storage/roms/ports/aos-companion/
 ```
-Then install `gba-launch` as `/storage/roms/ports/tmc-rgds/gba-launch` (it is the existing Minish Cap wrapper plus an Aria
-branch; `es_systems.cfg` must already point the `gba` system at it, see `platform/rgds/README.md`). Create an empty
-`/storage/roms/ports/aos-companion/no-companion` file to get plain mGBA.
+Then copy `gba-launch` next to `aos-bottom` (`chmod +x`) and, in `/storage/.config/emulationstation/es_systems.cfg` (back it up
+first), change the `gba` system's `<command>` from `/usr/bin/runemu.sh %ROM% ...` to
+`/storage/roms/ports/aos-companion/gba-launch %ROM% -P%SYSTEM% --core=%CORE% --emulator=%EMULATOR% --controllers="%CONTROLLERSCONFIG%"`.
+Other games still go through the stock launcher. Create an empty `/storage/roms/ports/aos-companion/no-companion` file to get plain mGBA.
 
 ## QA on the device
 `qa/launch_like_es.sh` launches the game through the wrapper with EmulationStation's environment; `qa/touchd.py` is a virtual

@@ -5,6 +5,6 @@ ESVARS=$(tr '\0' '\n' < /proc/$(pidof emulationstation)/environ | grep -E '^[A-Z
 for p in /proc/[0-9]*; do c=$(tr "\0" " " < $p/cmdline 2>/dev/null); case "$c" in "/storage/roms/ports/aos-companion/aos-bottom"*) kill ${p#/proc/};; esac; done 2>/dev/null
 pkill -9 retroarch; pkill -9 -f "[r]unemu.sh"; sleep 2
 cd /tmp
-setsid nohup env -i $ESVARS sh -c '/storage/roms/ports/tmc-rgds/gba-launch "/storage/roms/gba/Castlevania - Aria of Sorrow (USA).zip" -Pgba --core=mgba --emulator=retroarch --controllers="" -autosave 0 -state_slot 1' >/tmp/aos_wrap.log 2>&1 < /dev/null &
+setsid nohup env -i $ESVARS sh -c '/storage/roms/ports/aos-companion/gba-launch "/storage/roms/gba/Castlevania - Aria of Sorrow (USA).zip" -Pgba --core=mgba --emulator=retroarch --controllers="" -autosave 0 -state_slot 1' >/tmp/aos_wrap.log 2>&1 < /dev/null &
 sleep ${WAIT:-20}
 echo "retroarch=$(pidof retroarch | wc -w) aos-bottom=$(pidof aos-bottom | wc -w)"; cat /tmp/aos-bottom.log
