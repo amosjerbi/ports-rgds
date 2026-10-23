@@ -1,12 +1,13 @@
 # Aria of Sorrow companion (RG DS)
 
 Touch companion for *Castlevania: Aria of Sorrow (USA)* on the Anystream RG DS (ROCKNIX). The game runs in
-RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (DSI-1) and shows five tabs:
+RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (DSI-1) and shows six tabs:
 
 <p>
 <img src="screenshots/soul-set.png" width="320"> <img src="screenshots/equip.png" width="320">
 <img src="screenshots/item.png" width="320"> <img src="screenshots/ability.png" width="320">
 <img src="screenshots/enemy-list.png" width="320"> <img src="screenshots/enemy-detail.png" width="320">
+<img src="screenshots/map.png" width="320">
 </p>
 
 | Tab | What it does |
@@ -15,6 +16,7 @@ RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (D
 | EQUIP | Weapon / Armor / Accessory: owned gear, tap to equip; the game recalculates ATT/DEF itself |
 | ITEM | Consumables with counts and descriptions; USE for Potion, High/Super Potion, Meat Strip, Tasty Meat, Mind Up, High Mind Up, Mana Prism |
 | ABILITY | The six ability souls with ON/OFF switches |
+| MAP | The castle map, drawn live from the game's explored-room flags (full screen, no header). SELECT on the handheld toggles this tab. First use: tap `BUILD LIVE MAP` once (about a minute, the game's map flashes on the top screen); the app learns the layout from the running game and keeps it in `map-layout.cache`. Until then it keeps a copy of the game's map screen whenever you open it |
 | ENEMY | All 113 enemies (HP, EXP, weakness, resistance, drops, soul, description); dim = soul not obtained |
 
 Lists scroll by dragging or with the arrow buttons. The header shows level, HP/MP, ATT/DEF, stats, EXP, gold and play time.
@@ -51,3 +53,9 @@ Set `AOS_TEST_TAPS="ms,x,y;..."` to inject taps through the real tap handler.
 * Weakness/resistance names (Slash, Fire, Ice, Thunder, Poison, Holy, Curse, Dark) were matched against the in-game icons for
   the common ones; the Thunder/Curse labels are unverified.
 * Healing items are applied by the companion (HP/MP written directly), they do not run the game's item code.
+
+## Map tab notes
+* `BUILD LIVE MAP` needs RetroArch's `network_remote_enable` + `network_remote_enable_user_p1` (`gba-launch` turns them on for the session and off again afterwards) and the game in normal play, not in a menu. It writes test patterns into the explored-room flags, copies the game's map screen for each, then restores the flags.
+* The layout (which flag draws which room) is learned from your own running game and stored locally; nothing from the ROM is shipped.
+* The live map reads the explored-room flags (`0x020000C4`, `0x020001FC`) a few times a second. There is no position marker yet.
+* Reads are batched in 8 KB chunks (`ra_client.c`) because RetroArch answers one network request per frame.

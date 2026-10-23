@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define CHUNK 256 /* reply is "xx " per byte; keep each datagram comfortably small */
+#define CHUNK 8192 /* reply is "xx " per byte; RetroArch answers one request per frame, so fewer, bigger reads are much faster */
 
 static int sFd = -1;
 static struct sockaddr_in sAddr;
