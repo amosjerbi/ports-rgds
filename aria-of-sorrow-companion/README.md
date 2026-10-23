@@ -16,7 +16,7 @@ RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (D
 | EQUIP | Weapon / Armor / Accessory: owned gear, tap to equip; the game recalculates ATT/DEF itself |
 | ITEM | Consumables with counts and descriptions; USE for Potion, High/Super Potion, Meat Strip, Tasty Meat, Mind Up, High Mind Up, Mana Prism |
 | ABILITY | The six ability souls with ON/OFF switches |
-| MAP | The castle map, drawn live from the game's explored-room flags (full screen, no header). SELECT on the handheld toggles this tab. First use: tap `BUILD LIVE MAP` once (about a minute, the game's map flashes on the top screen); the app learns the layout from the running game and keeps it in `map-layout.cache`. Until then it keeps a copy of the game's map screen whenever you open it |
+| MAP | The castle map, drawn live from the game's explored-room flags (full screen, no header), so it follows your exploration without opening the game's map. SELECT on the handheld toggles this tab. The layout is learned from the game once, automatically (see Map tab notes) |
 | ENEMY | All 113 enemies (HP, EXP, weakness, resistance, drops, soul, description); dim = soul not obtained |
 
 Lists scroll by dragging or with the arrow buttons. The header shows level, HP/MP, ATT/DEF, stats, EXP, gold and play time.
@@ -55,7 +55,8 @@ Set `AOS_TEST_TAPS="ms,x,y;..."` to inject taps through the real tap handler.
 * Healing items are applied by the companion (HP/MP written directly), they do not run the game's item code.
 
 ## Map tab notes
-* `BUILD LIVE MAP` needs RetroArch's `network_remote_enable` + `network_remote_enable_user_p1` (`gba-launch` turns them on for the session and off again afterwards) and the game in normal play, not in a menu. It writes test patterns into the explored-room flags, copies the game's map screen for each, then restores the flags.
 * The layout (which flag draws which room) is learned from your own running game and stored locally; nothing from the ROM is shipped.
+* It builds itself once, automatically, the first time the game is in normal play (about 20 seconds; the game's map flashes on the top screen), and is kept in `map-layout.cache`. `BUILD LIVE MAP` on the tab repeats it by hand.
+* It needs RetroArch's `network_remote_enable` + `network_remote_enable_user_p1` (`gba-launch` turns them on for the session and off again afterwards). The test patterns written into the explored-room flags are always put back.
 * The live map reads the explored-room flags (`0x020000C4`, `0x020001FC`) a few times a second. There is no position marker yet.
 * Reads are batched in 8 KB chunks (`ra_client.c`) because RetroArch answers one network request per frame.

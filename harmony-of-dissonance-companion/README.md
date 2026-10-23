@@ -1,12 +1,13 @@
 # Harmony of Dissonance companion (RG DS)
 
 Touch companion for *Castlevania: Harmony of Dissonance (USA)* on the Anystream RG DS (ROCKNIX). The game runs in
-RetroArch's mGBA core on the top panel; `hod-bottom` runs on the bottom panel (DSI-1) and shows five tabs:
+RetroArch's mGBA core on the top panel; `hod-bottom` runs on the bottom panel (DSI-1) and shows six tabs:
 
 <p>
 <img src="screenshots/spellbook.png" width="320"> <img src="screenshots/equip.png" width="320">
 <img src="screenshots/item.png" width="320"> <img src="screenshots/relics.png" width="320">
 <img src="screenshots/enemy-list.png" width="320"> <img src="screenshots/enemy-detail.png" width="320">
+<img src="screenshots/map.png" width="320"> <img src="screenshots/map-castle-a.png" width="320">
 </p>
 
 | Tab | What it does |
@@ -16,6 +17,7 @@ RetroArch's mGBA core on the top panel; `hod-bottom` runs on the bottom panel (D
 | ITEM | Consumables, keys, maps and jewels with counts and descriptions |
 | RELICS | The twelve relics (magic items) with ON/OFF switches |
 | ENEMY | The encyclopedia: all 100 enemies (level, HP, EXP, weakness, resistance, drops); dim = not yet defeated |
+| MAP | The castle map, drawn live from the explored-room flags (full screen, no header), so it follows your exploration without opening the game's map. The button in the corner switches between A+B, castle A and castle B. SELECT on the handheld toggles this tab. The layout is learned from the game once, automatically (see Map tab notes) |
 
 Lists scroll by dragging or with the arrow buttons. The header shows level, HP/MP, STR/DEF/INT/LCK, hearts, EXP, gold and play time.
 Nothing from the ROM is shipped: names, descriptions and enemy data are read from the running game's ROM over RetroArch.
@@ -44,6 +46,13 @@ Other games still go through the stock launcher. Create an empty `/storage/roms/
 `qa/launch_like_es.sh` launches the game through the wrapper with EmulationStation's environment; `qa/touchd.py` is a virtual
 multitouch screen (`qa/start_touchd.sh`, then `echo "tap:300,450" > /tmp/touch.fifo`) and `qa/start_app.sh` runs the app against it.
 Set `HOD_TEST_TAPS="ms,x,y;..."` to inject taps through the real tap handler.
+
+## Map tab notes
+* The layout (which flag draws which room) is learned from your own running game and stored locally; nothing from the ROM is shipped.
+* It builds itself once, automatically, the first time the game is in normal play (about 20 seconds; the game's map flashes on the top screen), and is kept in `map-layout.cache`. `BUILD LIVE MAP` on the tab repeats it by hand.
+* It needs RetroArch's `network_remote_enable` + `network_remote_enable_user_p1` (`gba-launch` turns them on for the session and off again afterwards). The test patterns written into the explored-room flags are always put back.
+* Both castles share one room grid. Every 8-byte row of the explored-room arrays at `0x020000C4` and `0x020001FC` holds castle A's 32 flags, then castle B's; the A+B view colours a room blue (only A), green (only B) or cyan (both), as the game does.
+* The game's own map screen also draws a title, the percentage and the L/R arrows into the same bitmap; those are masked out. There is no position marker yet.
 
 ## Caveats
 * USA ROM only (`ACHE`). Writes go to the running game's RAM; nothing is saved until the game itself saves.

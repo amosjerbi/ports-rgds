@@ -1129,6 +1129,24 @@ static bool MapWaitOpen(bool wantOpen, int ms, int* hofs, int* vofs, uint32_t* t
     return false;
 }
 
+/* Reads the map screen until two reads agree and enough of it is drawn (the screen builds up: palette first, tiles later). */
+static bool MapStableGrab(int hofs, int vofs, uint32_t tm, uint32_t ch, uint8_t* out, uint8_t* palOut, int tries) {
+    static uint8_t second[MAP_W * MAP_H];
+    for (int g = 0; g < tries; g++) {
+        if (MapGrabIdx(hofs, vofs, tm, ch, out, palOut) && MapGrabIdx(hofs, vofs, tm, ch, second, NULL)) {
+            int diff = 0, drawn = 0;
+            for (int i = 0; i < MAP_W * MAP_H; i++) {
+                diff += out[i] != second[i];
+                drawn += out[i] != 0;
+            }
+            if (diff < 20 && drawn > 4000)
+                return true;
+        }
+        SDL_Delay(200);
+    }
+    return false;
+}
+
 /* One test: write the flag arrays, open the game's map, copy it (palette indices), close it again. */
 static bool MapTestCapture(const uint8_t* a, const uint8_t* b, uint8_t* out, uint8_t* palOut) {
     if (!RaClient_Write(MAP_A_ADDR, a, MAP_A_ROWS * 8) || !RaClient_Write(MAP_B_ADDR, b, MAP_B_ROWS * 8)) {
@@ -1146,21 +1164,11 @@ static bool MapTestCapture(const uint8_t* a, const uint8_t* b, uint8_t* out, uin
             SDL_Delay(1500);
             continue;
         }
-        SDL_Delay(700);
-        static uint8_t second[MAP_W * MAP_H];
-        bool ok = false;
-        for (int g = 0; g < 4 && !ok; g++) {
-            if (MapGrabIdx(hofs, vofs, tm, ch, out, palOut) && MapGrabIdx(hofs, vofs, tm, ch, second, NULL)) {
-                int diff = 0;
-                for (int i = 0; i < MAP_W * MAP_H; i++) diff += out[i] != second[i];
-                ok = diff < 20;
-            }
-            if (!ok)
-                SDL_Delay(300);
-        }
+        SDL_Delay(350);
+        const bool ok = MapStableGrab(hofs, vofs, tm, ch, out, palOut, 10);
         PressSelect();
         MapWaitOpen(false, 4000, &hofs, &vofs, &tm, &ch);
-        SDL_Delay(400);
+        SDL_Delay(250);
         if (ok)
             return true;
     }
@@ -1180,22 +1188,43 @@ static void FlagRows(uint8_t* out, int rows, int mode, int k) { /* mode 0 none, 
     }
 }
 
+/* Does the game's map open right now? (Not in a cutscene or a menu.) Leaves the map closed again. */
+static bool MapProbe(void) {
+    int hofs, vofs;
+    uint32_t tm, ch;
+    PressSelect();
+    if (!MapWaitOpen(true, 2500, &hofs, &vofs, &tm, &ch))
+        return false;
+    SDL_Delay(300);
+    PressSelect();
+    MapWaitOpen(false, 3000, &hofs, &vofs, &tm, &ch);
+    SDL_Delay(300);
+    return true;
+}
+
 /* Learns the castle layout from the game. Takes about a minute and needs the game in normal play (not in a menu). */
-static bool MapBuildLayout(void) {
+static bool MapBuildLayout(bool manual) {
     static uint8_t aT[MAP_A_ROWS * 8], bT[MAP_B_ROWS * 8], a0[MAP_A_ROWS * 8], b0[MAP_B_ROWS * 8];
-    static uint8_t tA[11][MAP_W * MAP_H], tB[10][MAP_W * MAP_H];
+    static uint8_t tType[MAP_W * MAP_H], tBit[11][MAP_W * MAP_H];
     uint8_t pal[32];
     int hofs, vofs;
     uint32_t tm, ch;
     if (MapScreenOpen(&hofs, &vofs, &tm, &ch)) {
-        Toast("Close the game's map first");
+        if (manual)
+            Toast("Close the game's map first");
         return false;
     }
     if (!RaClient_Read(MAP_A_ADDR, a0, sizeof a0) || !RaClient_Read(MAP_B_ADDR, b0, sizeof b0)) {
-        Toast("Cannot read the game");
+        if (manual)
+            Toast("Cannot read the game");
         return false;
     }
-    const int total = 23;
+    if (!MapProbe()) { /* cutscene, menu, fade...: nothing was written, try again later */
+        if (manual)
+            Toast("The map does not open here - try in normal gameplay");
+        return false;
+    }
+    const int total = 14;
     int done = 0;
     bool ok = true;
     DrawBuildProgress(0, total, "Starting...");
@@ -1211,22 +1240,22 @@ static bool MapBuildLayout(void) {
         ok = MapTestCapture(aT, bT, sNoab, NULL);
         DrawBuildProgress(++done, total, "Empty map");
     }
+    /* which array owns a pixel: array A all set, array B empty */
+    FlagRows(aT, MAP_A_ROWS, 1, 0);
+    FlagRows(bT, MAP_B_ROWS, 0, 0);
+    ok = ok && MapTestCapture(aT, bT, tType, NULL);
+    DrawBuildProgress(++done, total, "Map layout");
+    /* flag index bit by bit: both arrays carry "index has bit k set" at once, the owner type above tells which one counts */
     for (int k = 0; ok && k < 11; k++) {
         FlagRows(aT, MAP_A_ROWS, 2, k);
-        FlagRows(bT, MAP_B_ROWS, 1, 0);
-        ok = MapTestCapture(aT, bT, tA[k], NULL);
-        DrawBuildProgress(++done, total, "Map layout, part 1");
-    }
-    for (int k = 0; ok && k < 10; k++) {
-        FlagRows(aT, MAP_A_ROWS, 1, 0);
         FlagRows(bT, MAP_B_ROWS, 2, k);
-        ok = MapTestCapture(aT, bT, tB[k], NULL);
-        DrawBuildProgress(++done, total, "Map layout, part 2");
+        ok = MapTestCapture(aT, bT, tBit[k], NULL);
+        DrawBuildProgress(++done, total, "Map layout");
     }
     RaClient_Write(MAP_A_ADDR, a0, sizeof a0); /* always put the game's flags back */
     RaClient_Write(MAP_B_ADDR, b0, sizeof b0);
     if (!ok) {
-        Toast("Map build failed - try again in normal gameplay");
+        Toast("Map build failed - will retry in normal gameplay");
         return false;
     }
     /* decode: for every drawn pixel, which flag (array A or B) decides it */
@@ -1235,11 +1264,13 @@ static bool MapBuildLayout(void) {
         decA[p] = decB[p] = -1;
         if (!sFull[p])
             continue;
-        int va = 0, vb = 0;
-        for (int k = 0; k < 11; k++) if (tA[k][p] == sFull[p]) va |= 1 << k;
-        for (int k = 0; k < 10; k++) if (tB[k][p] == sFull[p]) vb |= 1 << k;
-        decA[p] = (va < MAP_A_ROWS * 32) ? (int16_t)va : (int16_t)-1;
-        decB[p] = (vb < MAP_B_ROWS * 32) ? (int16_t)vb : (int16_t)-1;
+        int v = 0;
+        for (int k = 0; k < 11; k++) if (tBit[k][p] == sFull[p]) v |= 1 << k;
+        if (tType[p] == sFull[p]) {
+            if (v < MAP_A_ROWS * 32) decA[p] = (int16_t)v;
+        } else if (v < MAP_B_ROWS * 32) {
+            decB[p] = (int16_t)v;
+        }
     }
     memset(sOwnType, 0, sizeof sOwnType);
     memset(sOwnIdx, 0, sizeof sOwnIdx);
@@ -1294,6 +1325,21 @@ static void MapPoll(Uint32 now) {
     int hofs, vofs;
     uint32_t tm, ch;
     const bool open = MapScreenOpen(&hofs, &vofs, &tm, &ch);
+    /* no layout yet: learn it once, automatically, as soon as the game has been in normal play (all four backgrounds on,
+     * no menu, no map) for a few seconds - that is, right after a new game or a loaded file starts */
+    static unsigned stable;
+    static Uint32 nextAuto;
+    uint8_t dc[2];
+    if (!open && RaClient_Read(0x04000000, dc, 2) && ((dc[0] | (dc[1] << 8)) & 0x1F00) == 0x1F00)
+        stable++;
+    else
+        stable = 0;
+    if (stable >= 12 && now >= nextAuto) {
+        stable = 0;
+        if (!MapBuildLayout(false))
+            nextAuto = now + 8000;
+        return;
+    }
     if (open && MapCopyFromScreen(hofs, vofs, tm, ch))
         sMapLive = true, sMapDirty = true;
     if (sMapLive && !open) {
@@ -1467,7 +1513,7 @@ static void OnTap(int x, int y) {
     } else if (id == H_PAGE_NEXT) {
         if ((sEnemyPage + 1) * 10 < ENEMY_COUNT) sEnemyPage++;
     } else if (id == H_BUILD) {
-        MapBuildLayout();
+        MapBuildLayout(true);
     } else if (id == H_BACK) {
         sEnemyDetail = -1;
     } else if (id >= H_ENEMY_CELL && id < H_ENEMY_CELL + ENEMY_COUNT) {
