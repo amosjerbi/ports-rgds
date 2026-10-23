@@ -1014,6 +1014,8 @@ static void MapRenderLive(void) {
             const int16_t* d = sDep[p];
             if ((d[0] >= 0 && exp[d[0]]) || (d[1] >= 0 && exp[d[1]]) || (d[2] >= 0 && exp[d[2]]) || (d[3] >= 0 && exp[d[3]]))
                 idx = sFull[p];
+            else if (!idx) /* rooms not explored yet: dim grey outline of the whole castle */
+                idx = sFull[p] == 1 ? 5 : 4;
         }
         sMapPix[p] = sPal[idx & 15];
     }

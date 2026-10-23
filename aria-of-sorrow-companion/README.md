@@ -16,7 +16,7 @@ RetroArch's mGBA core on the top panel; `aos-bottom` runs on the bottom panel (D
 | EQUIP | Weapon / Armor / Accessory: owned gear, tap to equip; the game recalculates ATT/DEF itself |
 | ITEM | Consumables with counts and descriptions; USE for Potion, High/Super Potion, Meat Strip, Tasty Meat, Mind Up, High Mind Up, Mana Prism |
 | ABILITY | The six ability souls with ON/OFF switches |
-| MAP | The castle map, drawn live from the game's explored-room flags (full screen, no header), so it follows your exploration without opening the game's map. SELECT on the handheld toggles this tab. The layout is learned from the game once, automatically (see Map tab notes) |
+| MAP | The castle map, drawn live from the game's explored-room flags (full screen, no header; unexplored rooms as a dim grey outline), so it follows your exploration without opening the game's map. SELECT on the handheld toggles this tab. The layout is learned from the game once, automatically (see Map tab notes) |
 | ENEMY | All 113 enemies (HP, EXP, weakness, resistance, drops, soul, description); dim = soul not obtained |
 
 Lists scroll by dragging or with the arrow buttons. The header shows level, HP/MP, ATT/DEF, stats, EXP, gold and play time.
