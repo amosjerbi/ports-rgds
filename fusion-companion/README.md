@@ -22,7 +22,8 @@ under the sector whose revealed-tile flags it matches (`0x02037C00`, 7 sectors x
 * once, automatically, the first time the game has been in normal play for a few seconds (the pause map flashes on the top screen
   while the app presses Start through RetroArch's network gamepad, and L if the pause screen opens on the status page),
 * whenever you open the game's map yourself (the sector you are looking at is refreshed),
-* when you tap UPDATE.
+* when you tap UPDATE,
+* automatically whenever the game has revealed new tiles in the sector you are in (a short flash of the pause map on the top screen, at most every 15 seconds); the AUTO UPDATE button on the tab turns this off.
 
 The other sectors are filled in as you visit them and open the map there. The game does not rebuild its pause map from the
 revealed-tile flags while it runs, so the picture cannot be redrawn live from them; the flags only tell which sector a picture

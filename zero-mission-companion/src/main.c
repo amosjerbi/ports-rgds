@@ -102,7 +102,8 @@ enum {
     H_BEAM = 120, /* + index */
     H_SUIT = 140, /* + index */
     H_AREA = 160, /* + area */
-    H_SCAN = 170
+    H_SCAN = 170,
+    H_AUTO = 171
 };
 static int sTab = TAB_STATUS;
 static char sToast[96];
@@ -138,6 +139,25 @@ static uint8_t sFlags[AREA_COUNT][VISITED_AREA_BYTES];
 static bool sFlagsValid;
 static char sCachePath[600];
 static bool sScanning;
+static bool sAutoMap = true; /* refresh the map by itself when the game has revealed new tiles */
+static int sScanMax = 8;
+static char sCfgPath[600];
+static void CfgSave(void) {
+    FILE* f = fopen(sCfgPath, "w");
+    if (f) {
+        fprintf(f, "auto=%d\n", sAutoMap);
+        fclose(f);
+    }
+}
+static void CfgLoad(void) {
+    FILE* f = fopen(sCfgPath, "r");
+    int v;
+    if (f) {
+        if (fscanf(f, "auto=%d", &v) == 1)
+            sAutoMap = v != 0;
+        fclose(f);
+    }
+}
 
 static uint32_t Fnv(const uint8_t* p, size_t n) {
     uint32_t h = 2166136261u;
@@ -424,8 +444,8 @@ static bool MapScanAll(bool manual) {
     sScanning = true;
     uint32_t first = 0;
     int got = 0;
-    for (int i = 0; i < 8; i++) {
-        DrawScanProgress(i, 8, "Copying the area maps");
+    for (int i = 0; i < sScanMax; i++) {
+        DrawScanProgress(i, sScanMax, "Copying the area maps");
         const uint32_t h = TilemapHash();
         if (i == 0)
             first = h;
@@ -485,15 +505,25 @@ static void MapPoll(Uint32 now) {
         return;
     }
     lastHash = 0;
-    /* no maps yet: copy them all once, automatically, as soon as the game has been in normal play for a few seconds */
-    if (!AnyMap() && RaClient_Read(0x04000000, dc, 2) && ((dc[0] | (dc[1] << 8)) & 0x0F00) == 0x0F00 && sSt.valid)
+    /* normal play for a few seconds (all four backgrounds on, no menu, no map) */
+    if (RaClient_Read(0x04000000, dc, 2) && ((dc[0] | (dc[1] << 8)) & 0x0F00) == 0x0F00 && sSt.valid)
         stable++;
     else
         stable = 0;
-    if (stable >= 10 && now >= nextAuto) {
+    if (stable < 10 || now < nextAuto)
+        return;
+    if (!AnyMap()) {
+        /* no maps yet: copy them once, automatically */
         stable = 0;
         if (!MapScanAll(false))
             nextAuto = now + 10000;
+    } else if (sAutoMap && AnyStale()) {
+        /* the game revealed new tiles: copy the map again (only the area Samus is in can have changed) */
+        stable = 0;
+        nextAuto = now + 15000;
+        sScanMax = 1;
+        MapScanAll(false);
+        sScanMax = 8;
     }
 }
 
@@ -513,6 +543,10 @@ static void DrawMap(void) {
     FrameRect(bx, by, 86, 28, C_GOLD);
     Text(sFont12, bx + 43, by + 7, 1, C_CREAM, "SCAN ALL");
     AddHit(bx, by, 86, 28, H_SCAN);
+    FillRect(W - 110, TAB_Y - 26, 104, 22, sAutoMap ? C_GREEN : C_PANEL2);
+    FrameRect(W - 110, TAB_Y - 26, 104, 22, C_DIM);
+    Text(sFont12, W - 58, TAB_Y - 23, 1, C_WHITE, "AUTO UPDATE %s", sAutoMap ? "ON" : "OFF");
+    AddHit(W - 110, TAB_Y - 26, 104, 22, H_AUTO);
     const AreaMap* m = &sArea[sMapArea];
     if (!m->have) {
         Text(sFont18, W / 2, 150, 1, C_GOLD, "%s", kAreaName[sMapArea]);
@@ -714,6 +748,10 @@ static void OnTap(int x, int y) {
         WriteBytes(RAM_EQUIP + EQ_SUITS_ON, &on, 1);
     } else if (id >= H_AREA && id < H_AREA + AREA_COUNT) {
         sMapArea = id - H_AREA;
+    } else if (id == H_AUTO) {
+        sAutoMap = !sAutoMap;
+        CfgSave();
+        Toast(sAutoMap ? "Map updates by itself when you explore" : "Auto update off");
     } else if (id == H_SCAN) {
         MapScanAll(true);
     }
@@ -772,6 +810,8 @@ int main(int argc, char** argv) {
     }
     sTouchFd = OpenBottomTouch();
     snprintf(sCachePath, sizeof sCachePath, "%s/maps.cache", dir);
+    snprintf(sCfgPath, sizeof sCfgPath, "%s/auto.cfg", dir);
+    CfgLoad();
     MapLoadCache();
 
     /* QA: ZM_TEST_TAPS="ms,x,y;ms,x,y" injects taps through the real tap handler */

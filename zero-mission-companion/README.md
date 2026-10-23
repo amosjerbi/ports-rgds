@@ -22,7 +22,8 @@ visited-tile flags it matches (`0x02037400`, 7 areas x 32 rows x u32, bit c of r
 * once, automatically, the first time the game has been in normal play for a few seconds (about 25 seconds; the pause map flashes on
   the top screen while the app presses Start and SELECT through RetroArch's network gamepad and copies each area),
 * whenever you open the game's map yourself (the area you are looking at is refreshed),
-* when you tap SCAN ALL.
+* when you tap SCAN ALL,
+* automatically whenever the game has revealed new tiles in the area you are in (a short flash of the pause map on the top screen, at most every 15 seconds); the AUTO UPDATE button on the tab turns this off.
 
 The game does not rebuild its pause map from the visited-tile flags while it runs, so the picture cannot be redrawn live from
 them; the flags are only used to tell which area a picture is and when it is out of date. There is no position marker yet.
