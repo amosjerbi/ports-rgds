@@ -1,0 +1,205 @@
+#!/bin/bash
+# GBA-system launch wrapper. EmulationStation passes: ROM -Pgba --core=.. --emulator=.. --controllers=..
+# Lives next to tmc-bottom / tmc-rgds (e.g. /storage/roms/ports/tmc-rgds/). No .sh extension on purpose, so
+# EmulationStation does not offer it as a Ports entry.
+#
+#  * Minish Cap with the mGBA core (the default): runs real mGBA in RetroArch on the top panel and starts
+#    tmc-bottom, which reads the game memory over RetroArch network commands and draws the second screen
+#    (map / quest / items) on the bottom panel. It exits with the emulator.
+#  * Minish Cap with the "minishcap-rgds" core: the native dual-screen build (tmc-rgds, no emulator).
+#  * Anything else: the stock launcher, unchanged.
+# Create "no-companion" next to this script to run plain mGBA for Minish Cap.
+#  * Golden Sun: The Lost Age with the mGBA core: starts gsl-bottom from /storage/roms/ports/gsl-companion (see golden-sun-lost-age-companion/).
+#  * Aria of Sorrow with the mGBA core: starts aos-bottom from /storage/roms/ports/aos-companion (see aria-companion/).
+#  * Circle of the Moon with the mGBA core: starts cotm-bottom from /storage/roms/ports/cotm-companion (see castlevania-circle-companion/).
+ROM="$1"
+AOSDIR=/storage/roms/ports/aos-companion
+HODDIR=/storage/roms/ports/hod-companion
+export SWAYSOCK=${SWAYSOCK:-/run/0-runtime-dir/sway-ipc.0.sock}
+D=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+CODE=$(dd if="$ROM" bs=1 skip=172 count=4 2>/dev/null)
+MINISH=0; { [ "$CODE" = "BZME" ] || [ "$CODE" = "BZMP" ]; } && MINISH=1
+# Castlevania: Harmony of Dissonance (USA): same idea
+HOD=0; { [ "$CODE" = "ACHE" ] || case "$ROM" in *"Harmony of Dissonance"*) true ;; *) false ;; esac; } && HOD=1
+# Metroid: Zero Mission (USA): by header code or (zipped ROM) by file name
+ZMDIR=/storage/roms/ports/zm-companion
+ZM=0; { [ "$CODE" = "BMXE" ] || case "$ROM" in *"Zero Mission"*) true ;; *) false ;; esac; } && ZM=1
+# Metroid Fusion (USA): by header code or (zipped ROM) by file name
+MFDIR=/storage/roms/ports/mf-companion
+MF=0; { [ "$CODE" = "AMTE" ] || case "$ROM" in *"Metroid Fusion"*) true ;; *) false ;; esac; } && MF=1
+# Golden Sun (USA/Europe): by header code or (zipped ROM) by file name ("Golden Sun (" so The Lost Age is not matched)
+GSDIR=/storage/roms/ports/gs-companion
+GS=0; { [ "$CODE" = "AGSE" ] || case "$ROM" in *"Golden Sun ("*) true ;; *) false ;; esac; } && GS=1
+# Final Fantasy VI Advance (USA): by header code or (zipped ROM) by file name
+FFDIR=/storage/roms/ports/ff-companion
+FF=0; { [ "$CODE" = "BZ6E" ] || case "$ROM" in *"Final Fantasy VI"*) true ;; *) false ;; esac; } && FF=1
+# Castlevania: Aria of Sorrow (USA): the ROM may be zipped, so go by the file name as well as the header code
+ARIA=0; { [ "$CODE" = "A2CE" ] || case "$ROM" in *"Aria of Sorrow"*) true ;; *) false ;; esac; } && ARIA=1
+# Castlevania: Circle of the Moon (USA): the ROM may be zipped, so go by the file name as well as the header code
+COTMDIR=/storage/roms/ports/cotm-companion
+COTM=0; { [ "$CODE" = "AAME" ] || case "$ROM" in *"Circle of the Moon"*) true ;; *) false ;; esac; } && COTM=1
+# Golden Sun: The Lost Age (USA/Europe): by header code or (zipped ROM) by file name
+GSLDIR=/storage/roms/ports/gsl-companion
+GSL=0; { [ "$CODE" = "AGFE" ] || case "$ROM" in *"The Lost Age"*) true ;; *) false ;; esac; } && GSL=1
+case " $* " in
+  *"--core=minishcap-rgds "*)
+    if [ "$MINISH" = 1 ]; then
+        . /etc/profile
+        export SDL_VIDEODRIVER=wayland
+        cd "$D" || exit 1
+        swaymsg "focus output DSI-2" >/dev/null 2>&1 # new windows open on the focused output: keep the game on top
+        ./tmc-rgds "$ROM"
+        RC=$?
+        # EmulationStation keeps the lower panel off; put it back the way it was.
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi ;;
+  *"--core=mgba "*)
+    # Golden Sun: The Lost Age: gsl-bottom (PARTY / DJINN / TOOLS, touch) runs on the lower panel.
+    if [ "$GSL" = 1 ] && [ -x "$GSLDIR/gsl-bottom" ] && [ ! -e "$GSLDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$GSLDIR/gsl-bottom" > /tmp/gsl-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Final Fantasy VI Advance: ff-bottom (PARTY / ITEMS / TOOLS, touch) runs on the lower panel.
+    if [ "$FF" = 1 ] && [ -x "$FFDIR/ff-bottom" ] && [ ! -e "$FFDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$FFDIR/ff-bottom" > /tmp/ff-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Golden Sun: gs-bottom (PARTY / DJINN / TOOLS, touch) runs on the lower panel.
+    if [ "$GS" = 1 ] && [ -x "$GSDIR/gs-bottom" ] && [ ! -e "$GSDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$GSDIR/gs-bottom" > /tmp/gs-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Metroid Fusion: mf-bottom (STATUS / ITEMS / MAP, touch) runs on the lower panel.
+    if [ "$MF" = 1 ] && [ -x "$MFDIR/mf-bottom" ] && [ ! -e "$MFDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$MFDIR/mf-bottom" > /tmp/mf-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Metroid: Zero Mission: zm-bottom (STATUS / ITEMS / MAP, touch) runs on the lower panel.
+    if [ "$ZM" = 1 ] && [ -x "$ZMDIR/zm-bottom" ] && [ ! -e "$ZMDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$ZMDIR/zm-bottom" > /tmp/zm-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    if [ "$HOD" = 1 ] && [ -x "$HODDIR/hod-bottom" ] && [ ! -e "$HODDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$HODDIR/hod-bottom" > /tmp/hod-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Aria of Sorrow: aos-bottom (SOUL SET / EQUIP / ITEM / ABILITY / ENEMY, touch) runs on the lower panel.
+    if [ "$ARIA" = 1 ] && [ -x "$AOSDIR/aos-bottom" ] && [ ! -e "$AOSDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$AOSDIR/aos-bottom" > /tmp/aos-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # Circle of the Moon: cotm-bottom (DSS / EQUIP / ITEM / MAGIC / MAP, touch) runs on the lower panel.
+    if [ "$COTM" = 1 ] && [ -x "$COTMDIR/cotm-bottom" ] && [ ! -e "$COTMDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1
+        SDL_VIDEODRIVER=wayland "$COTMDIR/cotm-bottom" > /tmp/cotm-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi
+    # The companion's RAM map is the USA one (BZME); other regions get plain mGBA.
+    if [ "$CODE" = "BZME" ] && [ ! -e "$D/no-companion" ]; then
+        . /etc/profile
+        # RetroArch's network command port (memory reads, state load) is only open during this session.
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1 # RetroArch opens on the focused output: keep it on the top panel
+        SDL_VIDEODRIVER=wayland "$D/tmc-bottom" "$ROM" > /tmp/tmc-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        # EmulationStation keeps the lower panel off; put it back the way it was.
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi ;;
+esac
+exec /usr/bin/runemu.sh "$@"
