@@ -1,0 +1,33 @@
+#!/bin/bash
+# GBA-system launch wrapper for the Final Fantasy Tactics Advance companion. EmulationStation passes: ROM -Pgba --core=.. --emulator=.. --controllers=..
+# Lives next to ffta-bottom (e.g. /storage/roms/ports/gs-companion/). No .sh extension on purpose, so EmulationStation does not offer it as a Ports entry.
+#  * Final Fantasy Tactics Advance with the mGBA core: starts ffta-bottom on the lower panel and opens RetroArch's network command port only for that session.
+#  * Anything else: the stock launcher, unchanged.
+# Create "no-companion" next to this script to run plain mGBA.
+ROM="$1"
+FFDIR=$(cd "$(dirname "$(readlink -f "$0")")" && pwd)
+export SWAYSOCK=${SWAYSOCK:-/run/0-runtime-dir/sway-ipc.0.sock}
+# the ROM may be zipped, so go by the file name as well as the header code
+CODE=$(dd if="$ROM" bs=1 skip=172 count=4 2>/dev/null)
+FFTA=0; { [ "$CODE" = "AFXE" ] || case "$ROM" in *"Final Fantasy Tactics Advance"*) true ;; *) false ;; esac; } && FFTA=1
+case " $* " in
+  *"--core=mgba "*)
+    if [ "$FFTA" = 1 ] && [ -x "$FFDIR/ffta-bottom" ] && [ ! -e "$FFDIR/no-companion" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
+        swaymsg "focus output DSI-2" >/dev/null 2>&1 # RetroArch opens on the focused output: keep it on the top panel
+        SDL_VIDEODRIVER=wayland "$FFDIR/ffta-bottom" > /tmp/ffta-bottom.log 2>&1 &
+        CP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $CP 2>/dev/null; wait $CP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
+        # EmulationStation keeps the lower panel off; put it back the way it was.
+        swaymsg "output DSI-1 power off" >/dev/null 2>&1
+        exit $RC
+    fi ;;
+esac
+exec /usr/bin/runemu.sh "$@"
