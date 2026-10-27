@@ -1,25 +1,29 @@
 # Golden Sun: The Lost Age companion (RG DS)
 
 Touch companion for *Golden Sun: The Lost Age (USA, Europe)* on the Anystream RG DS (ROCKNIX). The game runs in RetroArch's mGBA core
-on the top panel; `gsl-bottom` runs on the bottom panel (DSI-1) and shows three tabs. It is the Golden Sun companion
+on the top panel; `gsl-bottom` runs on the bottom panel (DSI-1) and shows three tabs (Party, Djinn, Psynergy) in the game's blue menu look. It is the Golden Sun companion
 (`golden-sun-companion/`) extended to the second game's eight characters and 72 Djinn.
 
 <p>
-<img src="screenshots/party.png" width="320"> <img src="screenshots/isaac.png" width="320">
-<img src="screenshots/djinn.png" width="320"> <img src="screenshots/tools.png" width="320">
+<img src="screenshots/party.png" width="320"> <img src="screenshots/djinn.png" width="320">
+<img src="screenshots/psynergy.png" width="320">
 </p>
 
 | Tab | What it does |
 | --- | --- |
-| PARTY | The active party first, then the other characters (Isaac, Garet, Ivan, Mia and Piers when they are in the save): level, HP / PP bars (tap a bar to refill it), experience, Attack / Defense / Agility / Luck, and per element the Djinn set, Power and Resist |
+| PARTY | Left: the active party first, then the others that have joined, with HP. Header: portrait, level, element, HP / PP bars (tap a bar to refill it). STATS: Attack / Defense / Agility / Luck / Exp / Coins (tap Coins for +10,000). ELEMENTS: Djinn set, Power and Resist per element |
 | DJINN | All 72 Djinn (18 per element) in the game's order, who holds each one and whether it is set or on standby; grey = not found yet |
-| TOOLS | Coins (+10,000 / +100,000 / MAX) and a one-tap heal for the active party |
+| PSYNERGY | The selected active-party member's pause-menu Psynergy; tap one to cast it (healing spells ask for the target) |
 
 The header always shows the active party's HP / PP bars and the coins. Everything is read live from the running game.
 
-## What is not here
-Item, Psynergy and class names are not shown: the game keeps its text compressed in the ROM and only draws it as tiles, so the companion
-cannot read it. Character names are the game's fixed slot order; the Djinn names are the game's fixed list.
+## Psynergy
+Read from the game's own Psynergy screen when you tap *Read Psynergy* (or *Re-read* after a level-up or party change): the companion presses
+A > Psynergy through RetroArch's network gamepad (UDP 55400) and reads the list the screen builds in IWRAM (`0x03002944`, count at `0x03002994`,
+screen depth pointer at `0x03000AF0`). Casting presses A > Psynergy > member > spell (Right turns the 5-per-page list) > target. Spell names
+are not in RAM (compressed text), so `kPsy` in `src/main.c` maps known ids to names (the ids and most costs match the first game; Retreat costs
+8 here); unknown ids show as `Psynergy XX` and still cast. Only the active party (up to four) can cast, and only with the field showing.
+Item and class names are not readable either; character names are the fixed slot order.
 
 ## How it works
 Same as the other companions: RetroArch's network command interface (UDP 55355, `READ_CORE_MEMORY` / `WRITE_CORE_MEMORY`), touch read from the
