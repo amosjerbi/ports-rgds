@@ -16,6 +16,7 @@ case " $* " in
         . /etc/profile
         RACFG=/storage/.config/retroarch/retroarch.cfg
         sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "true"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "true"|' $RACFG
         swaymsg "focus output DSI-2" >/dev/null 2>&1 # RetroArch opens on the focused output: keep it on the top panel
         SDL_VIDEODRIVER=wayland "$GSDIR/gs-bottom" > /tmp/gs-bottom.log 2>&1 &
         CP=$!
@@ -23,6 +24,7 @@ case " $* " in
         RC=$?
         kill $CP 2>/dev/null; wait $CP 2>/dev/null
         sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        sed -i 's|^network_remote_enable = .*|network_remote_enable = "false"|; s|^network_remote_enable_user_p1 = .*|network_remote_enable_user_p1 = "false"|' $RACFG
         # EmulationStation keeps the lower panel off; put it back the way it was.
         swaymsg "output DSI-1 power off" >/dev/null 2>&1
         exit $RC

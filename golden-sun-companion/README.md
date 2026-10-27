@@ -1,25 +1,28 @@
 # Golden Sun companion (RG DS)
 
 Touch companion for *Golden Sun (USA, Europe)* on the Anystream RG DS (ROCKNIX). The game runs in RetroArch's mGBA core on the top
-panel; `gs-bottom` runs on the bottom panel (DSI-1) and shows three tabs:
+panel; `gs-bottom` runs on the bottom panel (DSI-1) and shows three tabs (Party, Djinn, Psynergy):
 
 <p>
 <img src="screenshots/party.png" width="320"> <img src="screenshots/djinn.png" width="320">
-<img src="screenshots/tools.png" width="320">
+<img src="screenshots/psynergy.png" width="320">
 </p>
 
 | Tab | What it does |
 | --- | --- |
-| PARTY | Pick one of the four adventurers: level, HP / PP bars (tap a bar to refill it), experience, Attack / Defense / Agility / Luck, and per element the Djinn set, Power and Resist |
+| PARTY | Left: the four adventurers with HP. Header: portrait, level, element and HP / PP bars (tap a bar to refill it). STATS: Attack / Defense / Agility / Luck / Exp / Coins (tap Coins for +10,000). ELEMENTS: Djinn set, Power and Resist per element |
 | DJINN | All 28 Djinn in the game's own order, who holds each one and whether it is set or on standby |
-| TOOLS | Coins (+10,000 / +100,000 / MAX) and a one-tap heal for the whole party |
+| PSYNERGY | The selected adventurer's pause-menu Psynergy as a list; tap one to cast it (healing spells ask for the target) |
 
 The header always shows the four HP / PP bars and the coins. Everything is read live from the running game.
 
-## What is not here
-Item, Psynergy and class names are not shown: the game keeps its text compressed in the ROM and only draws it as tiles, so the
-companion has no way to read it. Everything shown (names of the adventurers, numbers, Djinn) comes from RAM; the Djinn names are
-the game's fixed list (checked against the in-game Djinn menu).
+## Psynergy
+The list is read from the game's own Psynergy screen the first time you tap *Read Psynergy* (and again with *Re-read*, e.g. after a level-up or
+a class change): the companion presses A > Psynergy through RetroArch's network gamepad (UDP 55400) and reads the list the screen builds in IWRAM
+(`0x03003644`, count at `0x03003694`). Casting presses the same buttons: A > Psynergy > adventurer > spell (Right turns the 5-per-page list) > target.
+Spell names are drawn from compressed text and are not in RAM, so `kPsy` in `src/main.c` maps the ids seen so far to names (Cure family, Ply, Wish,
+Revive, Cure Poison and the field Psynergy of the four adventurers); an unknown id shows as `Psynergy XX` and still casts. Item names are likewise
+not readable, so the item list was dropped in favour of Psynergy. Casting only works when the field is showing (not in a battle or cutscene).
 
 ## How it works
 It talks to RetroArch's network command interface (UDP 55355, `READ_CORE_MEMORY` / `WRITE_CORE_MEMORY`), reads touch straight from the

@@ -36,6 +36,8 @@
 #define CH_DJINN_SET_COUNT 0x118
 #define CH_DJINN_OWNED_COUNT 0x11C
 #define CH_EXP 0x124
+#define CH_ITEMS 0xD8 /* 15 x u16: low byte item id, high byte flags (bit 0 = worn) -- layout checked against the save, names are not in RAM */
+#define ITEM_SLOTS 15
 
 #define ELEMENT_COUNT 4
 static const char* kElementName[ELEMENT_COUNT] = { "VENUS", "MERCURY", "MARS", "JUPITER" };
