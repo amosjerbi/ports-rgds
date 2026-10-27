@@ -5,11 +5,12 @@ Bottom-panel touch app for *The Legend of Zelda: Four Swords* (GBA, via RetroArc
 (0 = your controls drive Player 1, 1 = Player 2; the other Link stands still). Select on the pad flips it.
 This app shows that byte and sets it over RetroArch's network command port (UDP 55355): tap a Link to switch.
 
-Top panel: the game, bottom panel: the companion. Player 1 (default), then Player 2 (the camera follows the selected Link):
+Top panel: the game. Bottom panel: the companion. The camera follows the selected Link.
 
-![Player 1](screenshots/player1.png)
-
-![Player 2](screenshots/player2.png)
+| | Game (top panel) | Companion (bottom panel) |
+|---|---|---|
+| **Player 1** (green, default) | ![Player 1 game](screenshots/player1-game.png) | ![Player 1 companion](screenshots/player1-companion.png) |
+| **Player 2** (red) | ![Player 2 game](screenshots/player2-game.png) | ![Player 2 companion](screenshots/player2-companion.png) |
 
 - Apply `fourswords_solo.ips` to your own ROM (USA, `AZLE`); name the result `...Four Swords Solo....gba` so the launcher picks the companion.
 - `./build.sh` (Docker, arm64) then `./deploy.sh`. The device's `gba-launch` wrapper needs a branch matching `*"Four Swords Solo"*` that starts `fs-bottom` and enables `network_cmd_enable` for the session.
