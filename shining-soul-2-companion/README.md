@@ -36,4 +36,8 @@ command and gamepad ports are enabled only while the game runs.
 same wifi play Shining Soul II's **Multiplayer Mode** as if linked by cable. The patch replaces the link library's poll
 so the game's own lobby, character exchange and co-op code run unchanged; `ss2-link.py` carries the 24-byte link records
 (about 60 per second each way) over UDP through RetroArch's network command port. The handheld with the lower IP is
-player 1. Setup, play and rebuild steps are in [`netplay/README.md`](netplay/README.md).
+player 1.
+
+![Both handhelds in the same field](netplay/screenshots/two-handhelds.png)
+
+Setup, play and rebuild steps are in [`netplay/README.md`](netplay/README.md).

@@ -16,6 +16,8 @@ own copy of the game in RetroArch's mGBA core; a small bridge passes the link re
   game memory when it sees the patched ROM's marker. About 60 records per second each way.
 * `gba-launch` starts the bridge for the length of a "Shining Soul II Netplay" session and stops it afterwards.
 
+![Both handhelds in the same field: the RG DS (left) and the H700 (right) each show both players](screenshots/two-handhelds.png)
+
 ## Setup (both handhelds)
 1. Apply the patch to your own ROM: `python3 apply_ips.py "Shining Soul II (USA).zip" shiningsoul2_netplay.ips "Shining Soul II Netplay (USA).gba"` and put the result in `/storage/roms/gba/` (copy the `.srm` save too if you want your characters).
 2. Copy `ss2-link.py` and `gba-launch` to `/storage/roms/ports/ss2-link/` and write the other handheld's IP into `/storage/roms/ports/ss2-link/peer`.
