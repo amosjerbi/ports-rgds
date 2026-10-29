@@ -1,0 +1,24 @@
+#!/bin/bash
+# GBA launch wrapper for Four Swords netplay. EmulationStation passes: ROM -Pgba --core=.. --emulator=.. --controllers=..
+#  * a ROM whose name contains "Four Swords Netplay": starts the wifi bridge (fs-link.py) for the length of the session
+#    and opens RetroArch's network command port, then runs the stock launcher.
+#  * anything else: the stock launcher, unchanged.
+# The peer's address lives in /storage/roms/ports/fs-link/peer (one line, e.g. 192.168.0.101).
+ROM="$1"
+FSDIR=/storage/roms/ports/fs-link
+case "$ROM" in
+  *"Four Swords Netplay"*)
+    if [ -r "$FSDIR/peer" ] && [ -f "$FSDIR/fs-link.py" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        python3 "$FSDIR/fs-link.py" --peer "$(tr -d ' \r\n' < "$FSDIR/peer")" --log /tmp/fs-link.log &
+        BP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $BP 2>/dev/null; wait $BP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        exit $RC
+    fi ;;
+esac
+exec /usr/bin/runemu.sh "$@"

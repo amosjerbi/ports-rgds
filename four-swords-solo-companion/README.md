@@ -16,6 +16,11 @@ Game frames below come from the patched ROM run in mGBA; the companion panels ar
 | 4 Links, blue (Player 3), camera follows blue | ![4 players, blue](screenshots/4p-blue-game.png) | ![companion, blue](screenshots/4p-blue-companion.png) |
 | 4 Links, all move together | ![4 players, all](screenshots/4p-all-game.png) | ![companion, all](screenshots/4p-all-companion.png) |
 
+## Two handhelds over wifi
+`netplay/` has a separate patch, `fourswords_netplay.ips`, plus a small wifi bridge (`fs-link.py`) and a launch wrapper, so
+**two handhelds** can play Four Swords together as if on a link cable, each with its own copy of the game. It was tested
+between an RG DS and an H700 device. See [netplay/README.md](netplay/README.md).
+
 ## Controls
 * **Player count:** tap **2 / 3 / 4 PLAYERS** on the companion *before* you start a stage (before "Linking with other systems..."
   on the game's menu is fine; changing it inside a stage is not supported).
