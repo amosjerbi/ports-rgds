@@ -29,3 +29,11 @@ The EWRAM copy of HP is rewritten from the IWRAM one every frame; max HP = VIT x
 `./build.sh` (Docker, arm64) then `./deploy.sh`; `WRAPPER=1 ./deploy.sh` also installs this folder's `gba-launch`
 (the master wrapper with every companion's branch, old one kept as `gba-launch.bak-ss2`). RetroArch's network
 command and gamepad ports are enabled only while the game runs.
+
+## Two handhelds over wifi
+
+`netplay/` has an IPS patch (my own bytes only, no ROM data), a bridge and a launch wrapper that let two handhelds on the
+same wifi play Shining Soul II's **Multiplayer Mode** as if linked by cable. The patch replaces the link library's poll
+so the game's own lobby, character exchange and co-op code run unchanged; `ss2-link.py` carries the 24-byte link records
+(about 60 per second each way) over UDP through RetroArch's network command port. The handheld with the lower IP is
+player 1. Setup, play and rebuild steps are in [`netplay/README.md`](netplay/README.md).

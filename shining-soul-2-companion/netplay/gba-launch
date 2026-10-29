@@ -1,0 +1,24 @@
+#!/bin/bash
+# GBA launch wrapper for Shining Soul II netplay. EmulationStation passes: ROM -Pgba --core=.. --emulator=.. --controllers=..
+#  * a ROM whose name contains "Shining Soul II Netplay": starts the wifi bridge (ss2-link.py) for the length of the
+#    session and opens RetroArch's network command port, then runs the stock launcher.
+#  * anything else: the stock launcher, unchanged.
+# The peer's address lives in /storage/roms/ports/ss2-link/peer (one line, e.g. 192.168.0.101).
+ROM="$1"
+LINKDIR=/storage/roms/ports/ss2-link
+case "$ROM" in
+  *"Shining Soul II Netplay"*)
+    if [ -r "$LINKDIR/peer" ] && [ -f "$LINKDIR/ss2-link.py" ]; then
+        . /etc/profile
+        RACFG=/storage/.config/retroarch/retroarch.cfg
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "true"|' $RACFG
+        python3 "$LINKDIR/ss2-link.py" --peer "$(tr -d ' \r\n' < "$LINKDIR/peer")" --log /tmp/ss2-link.log &
+        BP=$!
+        /usr/bin/runemu.sh "$@"
+        RC=$?
+        kill $BP 2>/dev/null; wait $BP 2>/dev/null
+        sed -i 's|^network_cmd_enable = .*|network_cmd_enable = "false"|' $RACFG
+        exit $RC
+    fi ;;
+esac
+exec /usr/bin/runemu.sh "$@"
