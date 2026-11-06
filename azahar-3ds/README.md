@@ -15,6 +15,10 @@ No ROMs, keys, or saves are included. Bring your own dumped `.3ds`/`.cci` game.
 * Sound is time-stretched with SoundTouch when a game dips below full speed. Pitch stays the same and the sound
   buffer doesn't run dry, so there is no crackle.
 * The Home button (or holding Select+Start) quits back to the launcher.
+* `run3ds.sh` sets two player options:
+  * `RGDS_PLAY_TOP_DISPLAY=1`: when the player runs on its own, SDL's display 0 is DSI-1, the **lower** panel. Without
+    this the game lands on the bottom panel and the touch screen on the top.
+  * `RGDS_PLAY_SWAP_AB=1`: A and B trade places for the game. Remove the line for the original mapping.
 * The launcher can't list `.3ds` files: its extensions are compiled in, and the release is SHA-256-checked at every
   launch. So each game gets a **Ports** entry instead. Ports only appear with *Settings → Library → Show all systems* on.
 

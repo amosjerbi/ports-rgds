@@ -180,7 +180,7 @@ diff -ruN orig/rgds/play/src/core/libretro_core.cpp rgds/play/src/core/libretro_
      // RGDS_PLAY_PROFILE=1: every 300 frames, the core's frame (retro_run, the read-back included) and the read-back
 diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
 --- orig/rgds/play/src/frontend/main.cpp	1970-01-01 02:00:00
-+++ rgds/play/src/frontend/main.cpp	2026-11-07 00:36:27
++++ rgds/play/src/frontend/main.cpp	2026-11-07 00:57:41
 @@ -61,6 +61,7 @@
  #endif
  
@@ -297,7 +297,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
  int parse_fit(const std::string& s) {
      return s == "integer" ? FitInteger : s == "smooth" || s == "fill" ? FitSmooth : FitSharp;
  }
-@@ -558,6 +651,9 @@
+@@ -558,9 +651,16 @@
          std::fprintf(stderr, "rgds-play: display %d %s at %d,%d %dx%d\n", i, name ? name : "?", b.x, b.y, b.w, b.h);
      }
      int pw = 640, ph = 480;
@@ -305,9 +305,18 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
 +    // panel's context, and the core's, are made with another one current).
 +    if (std::strcmp(session.core().system(), "3ds") == 0) SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
      if (two) {
-         if (!open_panel(upper, 0, pw, ph, true, "RG DS Play") ||
-             !open_panel(lower, 1, pw, ph, true, "RG DS Play second screen")) {
-@@ -609,6 +705,17 @@
+-        if (!open_panel(upper, 0, pw, ph, true, "RG DS Play") ||
+-            !open_panel(lower, 1, pw, ph, true, "RG DS Play second screen")) {
++        // RGDS_PLAY_TOP_DISPLAY=1: run on its own (KMSDRM, no session leases) SDL's display 0 is DSI-1, the
++        // RG DS's lower panel, so the top panel is display 1.
++        const char* top_env = std::getenv("RGDS_PLAY_TOP_DISPLAY");
++        const int top_display = top_env && std::atoi(top_env) == 1 ? 1 : 0;
++        if (!open_panel(upper, top_display, pw, ph, true, "RG DS Play") ||
++            !open_panel(lower, 1 - top_display, pw, ph, true, "RG DS Play second screen")) {
+             std::fprintf(stderr, "rgds-play: window: %s\n", SDL_GetError());
+             return 1;
+         }
+@@ -609,6 +709,17 @@
      // A light gun or a mouse game is played on the touch screen: it starts there, a finger aims or draws.
      const bool lightgun = session.profile() && (session.profile()->lightgun || session.profile()->mouse);
      if (lightgun && second == SecondCompanion) second = SecondSwap;
@@ -325,7 +334,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
      std::fprintf(stderr, "rgds-play: game screen %s, second screen %s, frame %s\n", fit_name(fit), second_name(second),
                   frame.name.c_str());
  
-@@ -616,7 +723,7 @@
+@@ -616,7 +727,7 @@
      want.freq = 48000;
      want.format = AUDIO_S16SYS;
      want.channels = 2;
@@ -334,7 +343,15 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
      SDL_AudioDeviceID audio = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
      SDL_AudioStream* stream = nullptr;
      unsigned stream_rate = 0;
-@@ -642,7 +749,16 @@
+@@ -628,6 +739,7 @@
+                      have.channels, have.samples, stream_rate, stream ? "" : ", but no converter");
+     } else std::fprintf(stderr, "rgds-play: no sound: %s\n", SDL_GetError());
+     const bool debug = std::getenv("RGDS_PLAY_DEBUG") != nullptr;
++    const bool swap_ab = std::getenv("RGDS_PLAY_SWAP_AB") && std::atoi(std::getenv("RGDS_PLAY_SWAP_AB")) == 1;
+ #ifdef __linux__
+     // RGDS_PLAY_CPU=N (RG DS OS): the main loop, which runs the core and draws, gets a core of its own at
+     // round-robin priority; the threads already started (SDL's audio) keep the session's CPUs.
+@@ -642,7 +754,16 @@
      }
  #endif
      int peak = 0;
@@ -352,7 +369,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
  
      // On its own on the RG DS the pad is read and grabbed directly. Under RG
      // DS Core it stays shared: the runtime watches it for Home.
-@@ -681,6 +797,22 @@
+@@ -681,6 +802,22 @@
          session.core().set_pointer(inside ? (wx - d.x) * game.w / d.w : -1, inside ? (wy - d.y) * game.h / d.h : -1,
                                     down);
      };
@@ -375,7 +392,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
      rgds::TouchDevice panel_touch;
      const bool panel_touch_open =
          !bridged && panel_touch.open_device(std::getenv("RGDS_TOUCH_DEV") ? std::getenv("RGDS_TOUCH_DEV") : "");
-@@ -766,6 +898,20 @@
+@@ -766,6 +903,20 @@
                  quit("Home");
              if (e.type == SDL_CONTROLLERDEVICEADDED && !pad && !device_pad.active())
                  pad = SDL_GameControllerOpen(e.cdevice.which);
@@ -396,7 +413,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
              // With the screens swapped a light-gun or mouse game is on the touch screen: a finger aims and fires, or
              // draws.
              if (lightgun && second == SecondSwap) {
-@@ -827,10 +973,13 @@
+@@ -827,10 +978,13 @@
              }
              if (have && session.companion()->touch(t)) drawn_key = ~0ull;
          }
@@ -412,7 +429,16 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
              for (const auto& point : panel_touch.poll())
                  if (point.kind < 3) {
                      Touch t{point.kind == 0   ? Touch::Down
-@@ -902,7 +1051,37 @@
+@@ -883,6 +1037,8 @@
+             }
+             // Off or the info screen: the game keeps its whole picture, HUD and all.
+             if (session.companion()) session.companion()->set_shown(second == SecondCompanion || second == SecondSwap);
++            // RGDS_PLAY_SWAP_AB=1: the A and B buttons trade places for the game.
++            if (swap_ab && ((pressed & A) != 0) != ((pressed & B) != 0)) pressed ^= A | B;
+             session.frame(pressed);
+             rumble(session.core().rumble());
+             owed -= frame_seconds;
+@@ -902,7 +1058,37 @@
                                   int(SDL_GetAudioDeviceStatus(audio)));
                      peak = 0;
                  }
@@ -451,7 +477,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
                  int ready;
                  while ((ready = SDL_AudioStreamAvailable(stream)) > 0) {
                      std::vector<uint8_t> out(size_t(std::min(ready, 16384)));
-@@ -925,6 +1104,16 @@
+@@ -925,6 +1111,16 @@
                               session.companion()->hud_probes(session.core()).c_str());
              logged_hud = hud;
          }
@@ -468,7 +494,7 @@ diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
          if (quit_at && session.frames() >= quit_at) quit("RGDS_PLAY_QUIT_AT");
          if (debug && session.frames() % 300 == 0 && upper.window != lower.window)
              std::fprintf(stderr, "rgds-play: game window on display %d, second window on display %d\n",
-@@ -971,7 +1160,12 @@
+@@ -971,7 +1167,12 @@
              SDL_RenderClear(window->renderer);
              for (Panel* p : {&upper, &lower}) {
                  if (p != window && !one_window) continue;

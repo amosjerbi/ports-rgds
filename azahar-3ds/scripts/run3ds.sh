@@ -21,6 +21,10 @@ done
 mkdir -p $AZ/home $AZ/shots $AZ/data /data/rgds/bios
 # the main loop on CPU 3 at real-time priority (as the launcher runs games), helper threads on all four cores
 export RGDS_PLAY_CPU=3
+# SDL display 0 (DSI-1) is the lower panel when rgds-play runs on its own
+export RGDS_PLAY_TOP_DISPLAY=1
+# A and B trade places (the user prefers it)
+export RGDS_PLAY_SWAP_AB=1
 taskset -c 0-3 ${PLAY:-$AZ/rgds-play} --rom "$ROM" --data $AZ/data --fonts $APP/assets/fonts \
     --core $AZ/azahar_libretro.so --system 3ds --system-dir /data/rgds/bios --no-companion
 echo "rgds-play exit $?"
