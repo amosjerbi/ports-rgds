@@ -11,6 +11,9 @@ grep -q RGDS_GLES src/citra_libretro/CMakeLists.txt || cat >> src/citra_libretro
 target_compile_definitions(citra_libretro_common PRIVATE USING_GLES)
 target_compile_definitions(citra_libretro PRIVATE USING_GLES)
 C
+# Mali-G52 (Panfrost) has no geometry shaders: skip the per-fragment-lighting fix-up stage (A Link Between Worlds)
+[ -f /work/azahar-no-geometry-shaders.patch ] && ! grep -q GeometryShadersSupported src/video_core/renderer_opengl/gl_shader_manager.h && \
+  patch -p0 < /work/azahar-no-geometry-shaders.patch
 cmake -G Ninja -B build -DENABLE_LIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=OFF -DLIBRETRO_STATIC=ON -DENABLE_OPENGL=ON \
   -DCMAKE_C_FLAGS="-mcpu=cortex-a55" -DCMAKE_CXX_FLAGS="-mcpu=cortex-a55"
 cmake --build build --target citra_libretro -j"$(nproc)"

@@ -1,0 +1,75 @@
+--- src/video_core/renderer_opengl/gl_shader_manager.cpp	2026-11-07 01:17:09
++++ src/video_core/renderer_opengl/gl_shader_manager.cpp	2026-11-07 01:17:27
+@@ -10,6 +10,7 @@
+ #include <unordered_map>
+ #include <variant>
+ #include "common/hash.h"
++#include "common/logging/log.h"
+ #include "common/settings.h"
+ #include "core/frontend/emu_window.h"
+ #include "video_core/pica/shader_setup.h"
+@@ -26,6 +27,21 @@
+ using Pica::Shader::FSConfig;
+ 
+ namespace OpenGL {
++
++bool GeometryShadersSupported() {
++    static const bool supported = [] {
++        const GLuint shader = glCreateShader(GL_GEOMETRY_SHADER);
++        if (shader == 0) {
++            while (glGetError() != GL_NO_ERROR) {
++            }
++            LOG_WARNING(Render_OpenGL, "No geometry shaders: per-fragment lighting runs without them");
++            return false;
++        }
++        glDeleteShader(shader);
++        return true;
++    }();
++    return supported;
++}
+ 
+ static u64 GetUniqueIdentifier(const Pica::RegsInternal& regs, const ProgramCode& code) {
+     std::size_t hash = 0;
+@@ -271,7 +287,7 @@
+         profile = Pica::Shader::Profile{
+             .has_separable_shaders = separable,
+             .has_clip_planes = driver.HasClipCullDistance(),
+-            .has_geometry_shader = true,
++            .has_geometry_shader = GeometryShadersSupported(),
+             .has_custom_border_color = true,
+             .has_fragment_shader_interlock = driver.HasArbFragmentShaderInterlock(),
+             // TODO: This extension requires GLSL 450 / OpenGL 4.5 context.
+@@ -335,7 +351,7 @@
+ 
+         // Enable the geometry-shader only if we are actually doing per-fragment lighting
+         // and care about proper quaternions. Otherwise just use standard vertex+fragment shaders.
+-        const bool use_geometry_shader = !config.state.lighting_disable;
++        const bool use_geometry_shader = !config.state.lighting_disable && GeometryShadersSupported();
+ 
+         res.use_clip_planes = profile.has_clip_planes;
+         res.use_geometry_shader = use_geometry_shader;
+--- src/video_core/renderer_opengl/gl_shader_manager.h	2026-11-07 01:17:09
++++ src/video_core/renderer_opengl/gl_shader_manager.h	2026-11-07 01:17:18
+@@ -22,6 +22,11 @@
+ 
+ namespace OpenGL {
+ 
++// RGDS: whether the context can make geometry shaders at all. Panfrost's Mali-G52 offers GLES 3.1 (run with
++// MESA_GLES_VERSION_OVERRIDE=3.2) and has none; without them the per-fragment-lighting quaternion fix-up stage is
++// skipped and the vertex shader feeds the fragment shader directly.
++bool GeometryShadersSupported();
++
+ class Driver;
+ class OpenGLState;
+ 
+--- src/video_core/renderer_opengl/gl_rasterizer.cpp	2026-11-07 01:17:09
++++ src/video_core/renderer_opengl/gl_rasterizer.cpp	2026-11-07 01:17:18
+@@ -457,7 +457,7 @@
+     // Enable the quaternion fix-up geometry-shader only if we are actually doing per-fragment
+     // lighting and care about proper quaternions. Otherwise just use standard vertex+fragment
+     // shaders
+-    if (regs.lighting.disable) {
++    if (regs.lighting.disable || !GeometryShadersSupported()) {
+         curr_shader_manager->UseTrivialGeometryShader();
+     } else {
+         curr_shader_manager->UseFixedGeometryShader(regs);

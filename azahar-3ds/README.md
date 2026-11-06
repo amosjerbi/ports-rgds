@@ -25,7 +25,7 @@ No ROMs, keys, or saves are included. Bring your own dumped `.3ds`/`.cci` game.
 ## What changed and why
 | Piece | Change |
 |---|---|
-| Azahar 2126.2 | Built as a libretro core for aarch64 with `-DENABLE_OPENGL=ON` (upstream turns it off on aarch64 Linux). `USING_GLES` is added for the libretro target, which upstream only sets for Android. The Mali-G52 (Panfrost) offers GLES 3.1, so the game runs with `MESA_GLES_VERSION_OVERRIDE=3.2`. |
+| Azahar 2126.2 | Built as a libretro core for aarch64 with `-DENABLE_OPENGL=ON` (upstream turns it off on aarch64 Linux). `USING_GLES` is added for the libretro target, which upstream only sets for Android. `azahar/azahar-no-geometry-shaders.patch`: the GPU has no geometry shaders, so the per-fragment-lighting fix-up stage is skipped and the vertex shader feeds the fragment shader directly. Without it, games with per-fragment lighting (A Link Between Worlds) fail to link shaders and run out of memory. The Mali-G52 (Panfrost) offers GLES 3.1, so the game runs with `MESA_GLES_VERSION_OVERRIDE=3.2`. |
 | rgds-play | For system `3ds`, it splits Azahar's stacked frame across both panels and maps touches on the lower panel to libretro POINTER input. **Zero-copy** frames: the core renders into a GL texture shared with both panel contexts, blitted after a fence, instead of `glReadPixels`. This took the title screen from 63% to about 95%. **Sound**: 1024-sample periods, a 120 ms queue, and SoundTouch tempo that follows the measured game speed. |
 | Port launcher | A port only gets the top panel's DRM lease and runs in its own namespace and cgroup. The `.sh` hands the game to `run3ds.sh` outside the port session, which pauses the launcher, plays, then restores it. |
 
@@ -50,7 +50,7 @@ Run directly: `/data/rgds/azahar/run3ds.sh /data/roms/3ds/game.3ds`. Benchmark: 
 ## Building
 Both builds run in a Debian trixie **arm64** container (docker/colima on an Apple Silicon Mac works).
 
-* **Core**: `azahar/build.sh`, run in the container with a volume at `/work`. It downloads the 2126.2 unified source,
+* **Core**: `azahar/build.sh`, run in the container with a volume at `/work` (put `azahar/azahar-no-geometry-shaders.patch` in `/work` too). It downloads the 2126.2 unified source,
   applies the GLES change, builds `citra_libretro`, and writes `/work/out/azahar_libretro.so`.
 * **Player**: start from the source the OS ships, the release's `emulators/rgds-play/source.tar.gz` (folders
   `rgds/` and `mgba/`). Add `src/launcher/system_icons.hpp` from
