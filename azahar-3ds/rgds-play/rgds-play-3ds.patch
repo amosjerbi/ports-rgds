@@ -1,0 +1,484 @@
+diff -ruN orig/rgds/play/src/core/core.hpp rgds/play/src/core/core.hpp
+--- orig/rgds/play/src/core/core.hpp	1970-01-01 02:00:00
++++ rgds/play/src/core/core.hpp	2026-11-06 23:58:30
+@@ -65,6 +65,19 @@
+     // positive (libretro's convention). Only systems with a stick read them.
+     virtual void set_sticks(int16_t lx, int16_t ly, int16_t rx, int16_t ry) { (void)lx, (void)ly, (void)rx, (void)ry; }
+     virtual Picture picture() const = 0;
++    // A GPU core's last frame left on the GPU (3DS): a GL texture in the panels' share group, its drawn size, a
++    // fence to wait on before reading it, and whether its rows run bottom-up. False when the frame is read back
++    // into picture() instead (then picture() is only black of the right size for a core that answers true).
++    struct GpuFrame {
++        unsigned texture = 0;
++        int w = 0, h = 0;
++        void* fence = nullptr;
++        bool bottom_up = true;
++    };
++    virtual bool gpu_frame(GpuFrame& out) const {
++        (void)out;
++        return false;
++    }
+     // A light gun aimed by touch (the NES Zapper): on, the second port is the gun; set_pointer aims it at a pixel
+     // of picture() (-1: off the screen) with the trigger down or up. False when the system has none.
+     virtual bool set_lightgun(bool on) {
+diff -ruN orig/rgds/play/src/core/libretro_core.cpp rgds/play/src/core/libretro_core.cpp
+--- orig/rgds/play/src/core/libretro_core.cpp	1970-01-01 02:00:00
++++ rgds/play/src/core/libretro_core.cpp	2026-11-06 23:59:02
+@@ -69,6 +69,34 @@
+         return ok;
+     }
+ };
++// Zero-copy (3DS): the core's colour as a texture shared with the panels' contexts, and a fence per frame.
++constexpr uint TEXTURE_2D = 0x0DE1, SYNC_GPU_COMMANDS_COMPLETE = 0x9117;
++struct ZeroCopyApi {
++    void (*GenTextures)(int, uint*);
++    void (*DeleteTextures)(int, const uint*);
++    void (*BindTexture)(uint, uint);
++    void (*TexStorage2D)(uint, int, uint, int, int);
++    void (*FramebufferTexture2D)(uint, uint, uint, uint, int);
++    void* (*FenceSync)(uint, uint);
++    void (*DeleteSync)(void*);
++    void (*Flush)();
++    bool load() {
++        bool ok = true;
++        auto get = [&](auto& fn, const char* name) {
++            fn = reinterpret_cast<std::remove_reference_t<decltype(fn)>>(g_gl->proc(name));
++            ok = ok && fn;
++        };
++        get(GenTextures, "glGenTextures");
++        get(DeleteTextures, "glDeleteTextures");
++        get(BindTexture, "glBindTexture");
++        get(TexStorage2D, "glTexStorage2D");
++        get(FramebufferTexture2D, "glFramebufferTexture2D");
++        get(FenceSync, "glFenceSync");
++        get(DeleteSync, "glDeleteSync");
++        get(Flush, "glFlush");
++        return ok;
++    }
++};
+ } // namespace gl
+ 
+ // A name as a profile code: "Legend of Zelda, The (USA)" -> LEGEND_OF_ZELDA, "SUPER MARIOKART" -> SUPER_MARIOKART.
+@@ -263,6 +291,11 @@
+     }
+ 
+     const char* system() const override { return system_.c_str(); }
++    bool gpu_frame(GpuFrame& out) const override {
++        if (!texture_ || !drawn_w_ || !drawn_h_) return false;
++        out = {texture_, int(drawn_w_), int(drawn_h_), fence_, hw_.bottom_left_origin};
++        return true;
++    }
+     // The cartridge's CRC-32 (without a dumper's header): "CRC_3FE272FB", the same for every name a file is given.
+     std::string game_code() const override { return code_; }
+     // The cartridge's own name where it has one (SNES), else the file's name: LEGEND_OF_ZELDA.
+@@ -481,6 +514,16 @@
+         default: return 0;
+         }
+     }
++    // libretro's pointer: -0x7FFF..0x7FFF across the frame; 0, 0 and not pressed while no finger is on it.
++    int16_t pointer(unsigned id) const {
++        const bool on = aim_x_ >= 0 && aim_y_ >= 0 && fw_ > 1 && fh_ > 1;
++        switch (id) {
++        case RETRO_DEVICE_ID_POINTER_X: return on ? int16_t(aim_x_ * 0xFFFE / (fw_ - 1) - 0x7FFF) : 0;
++        case RETRO_DEVICE_ID_POINTER_Y: return on ? int16_t(aim_y_ * 0xFFFE / (fh_ - 1) - 0x7FFF) : 0;
++        case RETRO_DEVICE_ID_POINTER_PRESSED: return on && aim_down_ ? 1 : 0;
++        default: return 0;
++        }
++    }
+     void set_pointer(int x, int y, bool pressed) override {
+         aim_x_ = x;
+         aim_y_ = y;
+@@ -524,9 +567,13 @@
+             if (fbo_) gl_.DeleteFramebuffers(1, &fbo_);
+             if (depth_) gl_.DeleteRenderbuffers(1, &depth_);
+             if (colour_) gl_.DeleteRenderbuffers(1, &colour_);
++            if (texture_) zgl_.DeleteTextures(1, &texture_);
++            if (fence_) zgl_.DeleteSync(fence_);
+             g_gl->end();
+         }
+-        fbo_ = depth_ = colour_ = 0;
++        fbo_ = depth_ = colour_ = texture_ = 0;
++        fence_ = nullptr;
++        drawn_w_ = drawn_h_ = 0;
+     }
+ 
+ private:
+@@ -640,13 +687,29 @@
+             std::fputs("play: the GPU context lacks framebuffer calls\n", stderr);
+             return false;
+         }
+-        const int w = std::max(1, max_w_), h = std::max(1, max_h_);
++        int w = std::max(1, max_w_), h = std::max(1, max_h_);
++        // Azahar's largest geometry is every layout at 10x (7200 x 4800, ~270 MB with depth): the stacked layout at
++        // up to 4x (1600 x 1920) is all the panels ever show.
++        if (system_ == "3ds") w = std::min(w, 1920), h = std::min(h, 1920);
+         gl_.GenFramebuffers(1, &fbo_);
+         gl_.BindFramebuffer(gl::FRAMEBUFFER, fbo_);
+         gl_.GenRenderbuffers(1, &colour_);
+-        gl_.BindRenderbuffer(gl::RENDERBUFFER, colour_);
+-        gl_.RenderbufferStorage(gl::RENDERBUFFER, gl::RGBA8, w, h);
+-        gl_.FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::RENDERBUFFER, colour_);
++        // 3DS: the colour is a texture the panels draw from themselves (gpu_frame), not read back each frame.
++        const char* zc = std::getenv("RGDS_PLAY_ZEROCOPY");
++        if (system_ == "3ds" && !(zc && std::strcmp(zc, "0") == 0) && zgl_.load()) {
++            gl_.DeleteRenderbuffers(1, &colour_);
++            colour_ = 0;
++            zgl_.GenTextures(1, &texture_);
++            zgl_.BindTexture(gl::TEXTURE_2D, texture_);
++            zgl_.TexStorage2D(gl::TEXTURE_2D, 1, gl::RGBA8, w, h);
++            zgl_.BindTexture(gl::TEXTURE_2D, 0);
++            zgl_.FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, texture_, 0);
++            std::fputs("play: the core's frame stays on the GPU (no read-back)\n", stderr);
++        } else {
++            gl_.BindRenderbuffer(gl::RENDERBUFFER, colour_);
++            gl_.RenderbufferStorage(gl::RENDERBUFFER, gl::RGBA8, w, h);
++            gl_.FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::RENDERBUFFER, colour_);
++        }
+         // Stencil only when asked (GLideN64 draws its 3D straight into this framebuffer, so it needs the depth).
+         if (hw_.depth || hw_.stencil) {
+             gl_.GenRenderbuffers(1, &depth_);
+@@ -667,6 +730,18 @@
+     // The frame the core just drew, into frame_: rows bottom-up in GL, bytes R, G, B, A as Picture wants them.
+     void read_back(unsigned w, unsigned h) {
+         if (!fbo_ || !w || !h) return;
++        if (texture_) {
++            // Left on the GPU: a fence after the core's commands (the panels wait on it on the GPU, not here), and
++            // picture() just the frame's size.
++            const auto read_start = profile_clock::now();
++            resize(static_cast<int>(w), static_cast<int>(h));
++            if (fence_) zgl_.DeleteSync(fence_);
++            fence_ = zgl_.FenceSync(gl::SYNC_GPU_COMMANDS_COMPLETE, 0);
++            zgl_.Flush();
++            drawn_w_ = w, drawn_h_ = h;
++            profile_.add(1, read_start);
++            return;
++        }
+         readback_.resize(static_cast<size_t>(w) * h);
+         gl_.BindFramebuffer(gl::READ_FRAMEBUFFER, fbo_);
+         gl_.PixelStorei(gl::PACK_ALIGNMENT, 4);
+@@ -727,6 +802,10 @@
+             return g_active->lightgun(id);
+         if (g_active && port == 0 && g_active->mouse_ && (device & 0xFF) == RETRO_DEVICE_MOUSE)
+             return g_active->mouse(id);
++        // 3DS (Azahar): the touch screen is libretro's pointer over the whole frame (both screens stacked), aimed
++        // by the lower panel's touches through set_pointer.
++        if (g_active && port == 0 && index == 0 && (device & 0xFF) == RETRO_DEVICE_POINTER && g_active->system_ == "3ds")
++            return g_active->pointer(id);
+         if (!g_active || port != 0) return 0;
+         if ((device & 0xFF) == RETRO_DEVICE_ANALOG) {
+             const auto& s = g_active->sticks_;
+@@ -988,6 +1067,10 @@
+     bool hw_refused_ = false, gpu_failed_ = false;
+     gl::Api gl_{};
+     gl::uint fbo_ = 0, colour_ = 0, depth_ = 0;
++    gl::ZeroCopyApi zgl_{};
++    gl::uint texture_ = 0;          // the colour as a texture the panels draw from (3DS), else 0
++    void* fence_ = nullptr;         // after the core's last frame
++    unsigned drawn_w_ = 0, drawn_h_ = 0;
+     std::vector<uint32_t> readback_;
+     std::vector<uint8_t> pending_state_;
+     // RGDS_PLAY_PROFILE=1: every 300 frames, the core's frame (retro_run, the read-back included) and the read-back
+diff -ruN orig/rgds/play/src/frontend/main.cpp rgds/play/src/frontend/main.cpp
+--- orig/rgds/play/src/frontend/main.cpp	1970-01-01 02:00:00
++++ rgds/play/src/frontend/main.cpp	2026-11-07 00:36:27
+@@ -61,6 +61,7 @@
+ #endif
+ 
+ #include <algorithm>
++#include <SoundTouch.h>
+ #include <atomic>
+ #include <cmath>
+ #include <csignal>
+@@ -111,8 +112,42 @@
+     SDL_Rect game_dest{};       // where the game was last drawn in it (a light gun aims through this)
+     SDL_GLContext gl = nullptr; // the renderer's own GL context (none for a software renderer)
+     bool owns_window = false;
++    unsigned read_fbo = 0, draw_fbo = 0; // this panel's context's framebuffers for a GPU core's frame (zero-copy)
+ };
+ 
++// The GL calls a panel makes itself to copy a GPU core's frame into its game texture on the GPU (zero-copy, 3DS):
++// the core's texture is in the panels' share group (SDL_GL_SHARE_WITH_CURRENT_CONTEXT).
++struct PanelGl {
++    void (*GenFramebuffers)(int, unsigned*) = nullptr;
++    void (*BindFramebuffer)(unsigned, unsigned) = nullptr;
++    void (*FramebufferTexture2D)(unsigned, unsigned, unsigned, unsigned, int) = nullptr;
++    void (*BlitFramebuffer)(int, int, int, int, int, int, int, int, unsigned, unsigned) = nullptr;
++    void (*WaitSync)(void*, unsigned, uint64_t) = nullptr;
++    void (*GetIntegerv)(unsigned, int*) = nullptr;
++    unsigned char (*IsEnabled)(unsigned) = nullptr;
++    void (*Enable)(unsigned) = nullptr;
++    void (*Disable)(unsigned) = nullptr;
++    bool loaded = false, ok = false;
++    bool load() {
++        if (loaded) return ok;
++        loaded = ok = true;
++        auto get = [&](auto& fn, const char* name) {
++            fn = reinterpret_cast<std::remove_reference_t<decltype(fn)>>(SDL_GL_GetProcAddress(name));
++            ok = ok && fn;
++        };
++        get(GenFramebuffers, "glGenFramebuffers");
++        get(BindFramebuffer, "glBindFramebuffer");
++        get(FramebufferTexture2D, "glFramebufferTexture2D");
++        get(BlitFramebuffer, "glBlitFramebuffer");
++        get(WaitSync, "glWaitSync");
++        get(GetIntegerv, "glGetIntegerv");
++        get(IsEnabled, "glIsEnabled");
++        get(Enable, "glEnable");
++        get(Disable, "glDisable");
++        return ok;
++    }
++} panel_gl;
++
+ uint32_t keyboard_buttons(const Uint8* k) {
+     uint32_t b = 0;
+     if (k[SDL_SCANCODE_X]) b |= A;
+@@ -365,6 +400,64 @@
+     p.game_dest = dest;
+ }
+ 
++// A 3DS game (Azahar's stacked layout: the 400 x 240 top screen over the 320 x 240 bottom one, centred, at any
++// resolution factor) on both panels: each panel shows its own screen, as large as fits.
++SDL_Rect dual_source(const Picture& game, bool bottom) {
++    const int half = game.h / 2;
++    if (!bottom) return {0, 0, game.w, half};
++    const int w = game.w * 320 / 400;
++    return {(game.w - w) / 2, half, w, game.h - half};
++}
++void draw_dual(Panel& p, const Picture& game, bool bottom, int fit) {
++    if (game.w != p.game_w || game.h != p.game_h) make_game_textures(p, game.w, game.h);
++    SDL_UpdateTexture(p.game, nullptr, game.px, game.stride * 4);
++    const SDL_Rect src = dual_source(game, bottom);
++    if (src.w <= 0 || src.h <= 0) return;
++    const SDL_Rect dest = fit_rect(p.area, src.w, src.h, fit == FitInteger);
++    // Smoothed unless the panel shows whole multiples (the bottom screen at 1x: exactly 2x on a 640 x 480 panel).
++    const bool whole = dest.w % src.w == 0 && dest.h % src.h == 0;
++    SDL_SetTextureScaleMode(p.game, whole || fit == FitInteger ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
++    SDL_RenderCopy(p.renderer, p.game, &src, &dest);
++    p.game_dest = dest;
++}
++
++// The same from a GPU core's frame left on the GPU: copied into the panel's game texture by the GPU (upright, after
++// the core's fence), then drawn as above. False when it can't be (the caller reads the picture back instead).
++bool draw_dual_gpu(Panel& p, const Core::GpuFrame& f, bool bottom, int fit) {
++    if (!p.gl || !panel_gl.load()) return false;
++    if (f.w != p.game_w || f.h != p.game_h) make_game_textures(p, f.w, f.h);
++    SDL_RenderFlush(p.renderer); // SDL's queued draws first: the copy below goes behind its back
++    int tw = 0, th = 0, panel_texture = 0;
++    if (SDL_GL_BindTexture(p.game, nullptr, nullptr) != 0) return false;
++    panel_gl.GetIntegerv(0x8069, &panel_texture); // GL_TEXTURE_BINDING_2D
++    SDL_GL_UnbindTexture(p.game);
++    SDL_QueryTexture(p.game, nullptr, nullptr, &tw, &th);
++    if (!panel_texture || tw != f.w || th != f.h) return false;
++    if (!p.read_fbo) panel_gl.GenFramebuffers(1, &p.read_fbo), panel_gl.GenFramebuffers(1, &p.draw_fbo);
++    if (f.fence) panel_gl.WaitSync(f.fence, 0, ~0ull); // GL_TIMEOUT_IGNORED: the GPU waits, not us
++    const bool scissor = panel_gl.IsEnabled(0x0C11);  // GL_SCISSOR_TEST would clip the copy
++    if (scissor) panel_gl.Disable(0x0C11);
++    constexpr unsigned READ = 0x8CA8, DRAW = 0x8CA9, COLOUR0 = 0x8CE0, TEX2D = 0x0DE1;
++    panel_gl.BindFramebuffer(READ, p.read_fbo);
++    panel_gl.FramebufferTexture2D(READ, COLOUR0, TEX2D, f.texture, 0);
++    panel_gl.BindFramebuffer(DRAW, p.draw_fbo);
++    panel_gl.FramebufferTexture2D(DRAW, COLOUR0, TEX2D, unsigned(panel_texture), 0);
++    // GL rows run bottom-up, the game texture's top-down: flipped in the copy.
++    panel_gl.BlitFramebuffer(0, 0, f.w, f.h, 0, f.bottom_up ? f.h : 0, f.w, f.bottom_up ? 0 : f.h,
++                             0x4000 /* GL_COLOR_BUFFER_BIT */, 0x2600 /* GL_NEAREST */);
++    panel_gl.BindFramebuffer(0x8D40, 0); // GL_FRAMEBUFFER: the window again, where SDL draws
++    if (scissor) panel_gl.Enable(0x0C11);
++    Picture size;
++    size.w = f.w, size.h = f.h;
++    const SDL_Rect src = dual_source(size, bottom);
++    const SDL_Rect dest = fit_rect(p.area, src.w, src.h, fit == FitInteger);
++    const bool whole = dest.w % src.w == 0 && dest.h % src.h == 0;
++    SDL_SetTextureScaleMode(p.game, whole || fit == FitInteger ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
++    SDL_RenderCopy(p.renderer, p.game, &src, &dest);
++    p.game_dest = dest;
++    return true;
++}
++
+ int parse_fit(const std::string& s) {
+     return s == "integer" ? FitInteger : s == "smooth" || s == "fill" ? FitSmooth : FitSharp;
+ }
+@@ -558,6 +651,9 @@
+         std::fprintf(stderr, "rgds-play: display %d %s at %d,%d %dx%d\n", i, name ? name : "?", b.x, b.y, b.w, b.h);
+     }
+     int pw = 640, ph = 480;
++    // A 3DS game's frame stays on the GPU: the panels' contexts and the core's share their textures (the lower
++    // panel's context, and the core's, are made with another one current).
++    if (std::strcmp(session.core().system(), "3ds") == 0) SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+     if (two) {
+         if (!open_panel(upper, 0, pw, ph, true, "RG DS Play") ||
+             !open_panel(lower, 1, pw, ph, true, "RG DS Play second screen")) {
+@@ -609,6 +705,17 @@
+     // A light gun or a mouse game is played on the touch screen: it starts there, a finger aims or draws.
+     const bool lightgun = session.profile() && (session.profile()->lightgun || session.profile()->mouse);
+     if (lightgun && second == SecondCompanion) second = SecondSwap;
++    // A 3DS game takes both panels: its top screen above, its touch screen below (draw_dual).
++    const bool dual = two && std::strcmp(session.core().system(), "3ds") == 0;
++    if (dual) std::fprintf(stderr, "rgds-play: 3DS screens on both panels, touches to the lower screen\n");
++    // RGDS_PLAY_VSYNC=0 (3DS): the panels' presents stop waiting for the vertical blank, so a game slower than
++    // the panels' 60 Hz doesn't also lose the wait for each panel's refresh.
++    if (const char* vs = std::getenv("RGDS_PLAY_VSYNC"); dual && vs && std::strcmp(vs, "0") == 0) {
++        const int a = SDL_RenderSetVSync(upper.renderer, 0), b = SDL_RenderSetVSync(lower.renderer, 0);
++        std::fprintf(stderr, "rgds-play: vsync off: %s\n", a == 0 && b == 0 ? "both panels" : SDL_GetError());
++    }
++    Uint32 rate_at = SDL_GetTicks();
++    uint64_t rate_frames = 0;
+     std::fprintf(stderr, "rgds-play: game screen %s, second screen %s, frame %s\n", fit_name(fit), second_name(second),
+                  frame.name.c_str());
+ 
+@@ -616,7 +723,7 @@
+     want.freq = 48000;
+     want.format = AUDIO_S16SYS;
+     want.channels = 2;
+-    want.samples = 512;
++    want.samples = dual ? 1024 : 512;
+     SDL_AudioDeviceID audio = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
+     SDL_AudioStream* stream = nullptr;
+     unsigned stream_rate = 0;
+@@ -642,7 +749,16 @@
+     }
+ #endif
+     int peak = 0;
+-    const Uint32 target_queue = Uint32(have.freq / 20) * 4; // 50 ms of stereo s16
++    // 50 ms of stereo s16; a 3DS game, whose speed dips below full, keeps 120 ms and stretches its sound to
++    // the rate it really makes it at (below), so the queue never runs dry and crackles.
++    const Uint32 target_queue = Uint32(have.freq / (dual ? 1000 / 120 : 20)) * 4;
++    // A 3DS game's sound time-stretched (pitch kept) to the speed the game really runs at: SoundTouch, as Citra.
++    soundtouch::SoundTouch stretcher;
++    double tempo = 1.0, measured_speed = 1.0;
++    uint64_t speed_samples = 0;
++    Uint64 speed_since = SDL_GetPerformanceCounter();
++    unsigned stretcher_rate = 0;
++    std::vector<int16_t> stretched(8192 * 2);
+ 
+     // On its own on the RG DS the pad is read and grabbed directly. Under RG
+     // DS Core it stays shared: the runtime watches it for Home.
+@@ -681,6 +797,22 @@
+         session.core().set_pointer(inside ? (wx - d.x) * game.w / d.w : -1, inside ? (wy - d.y) * game.h / d.h : -1,
+                                    down);
+     };
++    // A 3DS game: a finger at x, y of the lower panel touches the 3DS's lower screen there (a pixel of the stacked
++    // frame); lifted, or off the screen, the pointer lets go.
++    auto touch_3ds = [&](int x, int y, bool down) {
++        const SDL_Rect& d = lower.game_dest;
++        const Picture game = session.core().picture();
++        if (d.w <= 0 || d.h <= 0 || game.w <= 0 || game.h <= 0) return;
++        const SDL_Rect src = dual_source(game, true);
++        const int wx = lower.area.x + x * lower.area.w / std::max(1, pw),
++                  wy = lower.area.y + y * lower.area.h / std::max(1, ph);
++        const bool inside = wx >= d.x && wy >= d.y && wx < d.x + d.w && wy < d.y + d.h;
++        if (!inside) {
++            session.core().set_pointer(-1, -1, false);
++            return;
++        }
++        session.core().set_pointer(src.x + (wx - d.x) * src.w / d.w, src.y + (wy - d.y) * src.h / d.h, down);
++    };
+     rgds::TouchDevice panel_touch;
+     const bool panel_touch_open =
+         !bridged && panel_touch.open_device(std::getenv("RGDS_TOUCH_DEV") ? std::getenv("RGDS_TOUCH_DEV") : "");
+@@ -766,6 +898,20 @@
+                 quit("Home");
+             if (e.type == SDL_CONTROLLERDEVICEADDED && !pad && !device_pad.active())
+                 pad = SDL_GameControllerOpen(e.cdevice.which);
++            if (dual) {
++                if (e.type == SDL_FINGERDOWN || e.type == SDL_FINGERMOTION || e.type == SDL_FINGERUP) {
++                    if (e.tfinger.touchId == -2) { // the bridge's reader: the lower panel, 640x480
++                        touch_3ds(int(e.tfinger.x * pw), int(e.tfinger.y * ph), e.type != SDL_FINGERUP);
++                    } else if (lower.window && e.tfinger.windowID == SDL_GetWindowID(lower.window)) {
++                        int ww = 0, wh = 0;
++                        SDL_GetWindowSize(lower.window, &ww, &wh);
++                        touch_3ds((int(e.tfinger.x * ww) - lower.area.x) * pw / std::max(1, lower.area.w),
++                                  (int(e.tfinger.y * wh) - lower.area.y) * ph / std::max(1, lower.area.h),
++                                  e.type != SDL_FINGERUP);
++                    }
++                }
++                continue;
++            }
+             // With the screens swapped a light-gun or mouse game is on the touch screen: a finger aims and fires, or
+             // draws.
+             if (lightgun && second == SecondSwap) {
+@@ -827,10 +973,13 @@
+             }
+             if (have && session.companion()->touch(t)) drawn_key = ~0ull;
+         }
+-        if (panel_touch_open && lightgun && second == SecondSwap)
++        if (panel_touch_open && dual)
+             for (const auto& point : panel_touch.poll())
++                if (point.kind < 3) touch_3ds(point.x, point.y, point.kind != 2);
++        if (panel_touch_open && !dual && lightgun && second == SecondSwap)
++            for (const auto& point : panel_touch.poll())
+                 if (point.kind < 3) aim(point.x, point.y, point.kind != 2);
+-        if (panel_touch_open && session.companion() && (second == SecondCompanion || second == SecondInfo))
++        if (panel_touch_open && !dual && session.companion() && (second == SecondCompanion || second == SecondInfo))
+             for (const auto& point : panel_touch.poll())
+                 if (point.kind < 3) {
+                     Touch t{point.kind == 0   ? Touch::Down
+@@ -902,7 +1051,37 @@
+                                  int(SDL_GetAudioDeviceStatus(audio)));
+                     peak = 0;
+                 }
+-                if (n && !fast) SDL_AudioStreamPut(stream, samples.data(), int(n * 4));
++                if (n && !fast && dual) {
++                    if (stretcher_rate != stream_rate) {
++                        stretcher_rate = stream_rate;
++                        stretcher.clear();
++                        stretcher.setChannels(2);
++                        stretcher.setSampleRate(stream_rate);
++                        stretcher.setPitch(1.0);
++                    }
++                    // The game's real speed: the sound it made over the last half second against the clock.
++                    speed_samples += n;
++                    Uint64 t = SDL_GetPerformanceCounter();
++                    double secs = double(t - speed_since) / SDL_GetPerformanceFrequency();
++                    if (secs >= 0.5) {
++                        measured_speed = std::clamp(double(speed_samples) / (secs * stream_rate), 0.3, 1.2);
++                        speed_samples = 0;
++                        speed_since = t;
++                    }
++                    // Tempo follows that speed, nudged to keep the queue at its target, and changes slowly so it
++                    // is never heard bending.
++                    double fill = double(SDL_GetQueuedAudioSize(audio) + stretcher.numSamples() * 4) / target_queue;
++                    double want_tempo = std::clamp(measured_speed * (1.0 + 0.3 * (fill - 1.0)), 0.5, 1.1);
++                    tempo += (want_tempo - tempo) * 0.03;
++                    stretcher.setTempo(tempo);
++                    stretcher.putSamples(samples.data(), unsigned(n));
++                    unsigned got;
++                    while ((got = stretcher.receiveSamples(stretched.data(), unsigned(stretched.size() / 2))) > 0)
++                        SDL_AudioStreamPut(stream, stretched.data(), int(got * 4));
++                    if (debug && session.frames() % 60 == 0)
++                        std::fprintf(stderr, "rgds-play: sound tempo %.3f, game speed %.3f, queue %.0f%%\n", tempo,
++                                     measured_speed, fill * 100);
++                } else if (n && !fast) SDL_AudioStreamPut(stream, samples.data(), int(n * 4));
+                 int ready;
+                 while ((ready = SDL_AudioStreamAvailable(stream)) > 0) {
+                     std::vector<uint8_t> out(size_t(std::min(ready, 16384)));
+@@ -925,6 +1104,16 @@
+                              session.companion()->hud_probes(session.core()).c_str());
+             logged_hud = hud;
+         }
++        // A 3DS game's real speed, every 300 frames: emulated frames per second of wall time (60 is full speed).
++        if (dual && session.frames() >= rate_frames + 300) {
++            const Uint32 now_ms = SDL_GetTicks();
++            std::fprintf(stderr, "rgds-play: speed %.1f fps (%.0f%%)\n",
++                         double(session.frames() - rate_frames) * 1000.0 / std::max<Uint32>(1, now_ms - rate_at),
++                         double(session.frames() - rate_frames) * 100000.0 / std::max<Uint32>(1, now_ms - rate_at) /
++                             session.frame_rate());
++            rate_at = now_ms;
++            rate_frames = session.frames();
++        }
+         if (quit_at && session.frames() >= quit_at) quit("RGDS_PLAY_QUIT_AT");
+         if (debug && session.frames() % 300 == 0 && upper.window != lower.window)
+             std::fprintf(stderr, "rgds-play: game window on display %d, second window on display %d\n",
+@@ -971,7 +1160,12 @@
+             SDL_RenderClear(window->renderer);
+             for (Panel* p : {&upper, &lower}) {
+                 if (p != window && !one_window) continue;
+-                if (p == &game_panel)
++                if (dual) {
++                    Core::GpuFrame gf;
++                    if (!(session.core().gpu_frame(gf) && draw_dual_gpu(*p, gf, p == &lower, fit)))
++                        draw_dual(*p, colour.apply(session.game(shader_live())), p == &lower, fit);
++                }
++                else if (p == &game_panel)
+                     draw_game(*p, colour.apply(session.game(shader_live())), fit, frame, session.font(), system_label);
+                 else if (second != SecondOff) {
+                     if (companion_new) SDL_UpdateTexture(p->companion, nullptr, companion.data(), pw * 4);
