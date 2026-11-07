@@ -23,6 +23,10 @@ into `/data/rgds/azahar/data/Azahar/sdmc/Nintendo 3DS/<zeros>/<zeros>/title/0004
 
 ## Status
 * Boots, loads saves, and draws correctly on both screens, with touch on the bottom panel.
-* **Slow: about 20–40% speed.** The emulator's main thread uses a whole Cortex-A55 core, so the game is CPU-bound. That
+* **Slow: about 35–40% speed in the field, with bursts near full speed.** The emulator's main thread uses a whole Cortex-A55 core, so the game is CPU-bound. That
   makes it playable to look around, but not at full speed.
-* The first run compiles shaders and stutters more. Later runs load them from Azahar's disk cache.
+* **No disk shader cache.** The launcher sets `citra_use_disk_shader_cache=disabled`. On GLES, Azahar links a full
+  program for every shader pair and rebuilds every pair it ever saw at start. This game's cache passed 1,000 programs
+  (~2 MB of RAM each on Panfrost) and ran out of the 3 GB. Without the cache, a session holds only the shaders it uses
+  (about 1.5 GB), but new areas stutter a moment while their shaders compile.
+* Tried and rejected: Mesa `mesa_glthread=true` (10% slower).

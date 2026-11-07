@@ -1,0 +1,42 @@
+--- src/video_core/renderer_opengl/gl_stream_buffer.cpp	2026-11-07 01:49:01
++++ src/video_core/renderer_opengl/gl_stream_buffer.cpp	2026-11-07 07:50:17
+@@ -24,12 +24,18 @@
+         allocate_size *= 2;
+     }
+ 
+-    if (GLAD_GL_ARB_buffer_storage) {
++    // RGDS: GLES drivers offer the same as EXT_buffer_storage (Panfrost does). Without it every draw maps and
++    // unmaps its buffers, which on Panfrost costs ioctls and mmap/munmap each time.
++    if (GLAD_GL_ARB_buffer_storage || GLAD_GL_EXT_buffer_storage) {
+         persistent = true;
+         coherent = prefer_coherent;
+         GLbitfield flags =
+             GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | (coherent ? GL_MAP_COHERENT_BIT : 0);
+-        glBufferStorage(gl_target, allocate_size, nullptr, flags);
++        if (GLAD_GL_ARB_buffer_storage) {
++            glBufferStorage(gl_target, allocate_size, nullptr, flags);
++        } else {
++            glBufferStorageEXT(gl_target, allocate_size, nullptr, flags);
++        }
+         mapped_ptr = static_cast<u8*>(glMapBufferRange(
+             gl_target, 0, buffer_size, flags | (coherent ? 0 : GL_MAP_FLUSH_EXPLICIT_BIT)));
+     } else {
+@@ -68,11 +74,16 @@
+         invalidate = true;
+ 
+         if (persistent) {
+-            glUnmapBuffer(gl_target);
++            // RGDS: the mapping stays for the buffer's life; before writing over the start again, wait for the
++            // GPU to finish the draws that read it. (Unmapping and mapping again with INVALIDATE_BUFFER made
++            // Panfrost allocate a new buffer each wrap and never free the old ones: out of memory in minutes.)
++            GLsync sync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
++            glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 1'000'000'000);
++            glDeleteSync(sync);
+         }
+     }
+ 
+-    if (invalidate || !persistent) {
++    if (!persistent) {
+         MICROPROFILE_SCOPE(OpenGL_StreamBuffer);
+         GLbitfield flags = GL_MAP_WRITE_BIT | (persistent ? GL_MAP_PERSISTENT_BIT : 0) |
+                            (coherent ? GL_MAP_COHERENT_BIT : GL_MAP_FLUSH_EXPLICIT_BIT) |

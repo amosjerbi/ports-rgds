@@ -14,6 +14,9 @@ C
 # Mali-G52 (Panfrost) has no geometry shaders: skip the per-fragment-lighting fix-up stage (A Link Between Worlds)
 [ -f /work/azahar-no-geometry-shaders.patch ] && ! grep -q GeometryShadersSupported src/video_core/renderer_opengl/gl_shader_manager.h && \
   patch -p0 < /work/azahar-no-geometry-shaders.patch
+# GLES: persistent stream buffers through EXT_buffer_storage (about 10% faster on Panfrost, see the patch)
+[ -f /work/azahar-gles-buffer-storage.patch ] && ! grep -q GLAD_GL_EXT_buffer_storage src/video_core/renderer_opengl/gl_stream_buffer.cpp && \
+  patch -p0 < /work/azahar-gles-buffer-storage.patch
 cmake -G Ninja -B build -DENABLE_LIBRETRO=ON -DCMAKE_BUILD_TYPE=Release -DENABLE_LTO=OFF -DLIBRETRO_STATIC=ON -DENABLE_OPENGL=ON \
   -DCMAKE_C_FLAGS="-mcpu=cortex-a55" -DCMAKE_CXX_FLAGS="-mcpu=cortex-a55"
 cmake --build build --target citra_libretro -j"$(nproc)"
