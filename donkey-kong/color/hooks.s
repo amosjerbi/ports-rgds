@@ -37,6 +37,7 @@ CPAL  = $dc00   ; derived CGB palettes: 8 BG (64 B), 4 OBJ(OBP0), 4 OBJ(OBP1) (3
 OVRON = $df40   ; stage colour override active (Big-City 1-2)
 HUDW  = $df41   ; window-map row 0 attribute to write at the next idle VBlank (palette+1), 0 = none
 BGSP  = $df45   ; 1 = override map is indexed by BG row (scrolling stages), 0 = by screen row
+OVRTH = $df47   ; world theme number 1..9 loaded (stage selector 3)
 OVRSEL= $df46   ; which stage override is loaded (0 = Big-City 1-2, 1 = scrolling city stage)
 BGMAP = $d800   ; 20 x 32 override map in BG coordinates
 DKLO  = $df42   ; Donkey Kong sprite tile range [DKLO,DKHI) in the current stage, DKHI=0 none
@@ -1041,7 +1042,7 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     jp z,.off
     ld a,($c85d)
     and a
-    jp nz,.off
+    jp nz,.th
     ld a,($c85c)            ; level-sequence step: 16 = Big-City 1-2, 19 = the scrolling city stage
     ld b,0
     cp 16
@@ -1053,17 +1054,93 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     cp 41
     jr z,.chk
     cp 42
-    jp nz,.off
+    jr z,.chk
+    jp .th
 .chk:
     ld a,(OVRON)
     and a
-    jr z,.apply
+    jp z,.apply
     ld a,(OVRSEL)
     cp b
-    jr nz,.apply
+    jp nz,.apply
     ld a,(FLG)
     and 3
     ret z
+.th:                        ; every other play stage: its world's colour theme (selector 3)
+    ld a,($c85d)
+    ld d,a
+    ld a,($c85c)
+    ld e,a
+    ld c,0
+    ld hl,THSTEP
+.tw:
+    ld a,(hl+)
+    ld b,a
+    ld a,(hl+)
+    cp $ff
+    jr z,.tdone
+    cp d
+    jr c,.tinc
+    jr nz,.tdone
+    ld a,e
+    cp b
+    jr c,.tdone
+.tinc:
+    inc c
+    jr .tw
+.tdone:
+    ld a,c
+    and a
+    jp z,.off
+    ld b,3
+    ld a,(OVRON)
+    and a
+    jr z,.tap
+    ld a,(OVRSEL)
+    cp 3
+    jr nz,.tap
+    ld a,(OVRTH)
+    cp c
+    jr nz,.tap
+    ld a,(FLG)
+    and 3
+    ret z
+.tap:
+    ld a,c
+    ld (OVRTH),a
+    jp .apply
+.st4:                       ; world theme: palettes by world, empty map, shared character classes
+    xor a
+    ld (BGSP),a
+    ld a,(OVRTH)
+    dec a
+    srl a
+    ld h,a
+    ld a,0
+    rra
+    ld l,a
+    ld de,OVRDT
+    add hl,de
+    ld a,$0c
+    ld de,OVRP
+    ld bc,128
+    call COPYBK
+    ld hl,MAP
+    ld bc,360
+.z:
+    xor a
+    ld (hl+),a
+    dec bc
+    ld a,b
+    or c
+    jr nz,.z
+    ld a,$0c
+    ld hl,OVRDG
+    ld de,OBJCLS
+    ld bc,256
+    call COPYBK
+    jp .on
+
 .apply:
     ld a,b
     ld (OVRSEL),a
@@ -1074,6 +1151,8 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld a,(OVRSEL)
     cp 2
     jp z,.st3
+    cp 3
+    jp z,.st4
     and a
     jr nz,.st2
     xor a
@@ -1281,3 +1360,4 @@ DKTAB:                      ; step, first tile, last tile+1  (steps are the leve
     db $ff
 DKPALD:                     ; BGR555: transparent, dark brown, brown, beige
     dw $0000,$0887,$1d33,$4ede
+THSTEP: dw 13,39,78,104,143,182,208,247,299,$ffff

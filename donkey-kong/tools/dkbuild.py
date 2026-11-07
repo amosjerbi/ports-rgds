@@ -34,10 +34,17 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
     for row in ov3['map']: blob3+=bytes(row)
     blob3+=bytes(ov3['cls']); assert len(blob3)==128+360+256
     ovdc=0x7002+len(blob2); assert ovdc+len(blob3)<=0x8000
-    assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3))
-    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896
+    th=json.load(open(os.path.join(ROOT,'data','themes.json'))); blob4=bytearray()
+    for t in th['themes']:
+        for pal in t['bg']:
+            for c in pal: blob4+=_st.pack('<H',c15(c))
+        for pal in t['obj']:
+            for c in pal: blob4+=_st.pack('<H',c15(c))
+    assert len(blob4)==9*128
+    ovdt=ovdc+len(blob3); blob4+=bytes(th['cls']); ovdg=ovdt+9*128; assert ovdt+len(blob4)<=0x8000
+    assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3)+bytes(blob4))
+    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128
     a.include(os.path.join(ROOT,'color','hooks.s')); code=a.link(); S=a.sym
-    os.makedirs(os.path.join(ROOT,'out'),exist_ok=True)
     json.dump({k:v for k,v in S.items() if isinstance(v,int)},open(os.path.join(ROOT,'out','syms.json'),'w'))
     lo,hi=min(code),max(k for k in code if k<0x4000)
     for k,v in code.items():
