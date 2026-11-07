@@ -25,5 +25,7 @@ os.dup2(log, 1); os.dup2(log, 2)
 null = os.open("/dev/null", os.O_RDONLY); os.dup2(null, 0)
 # a clean environment (no port lease shim); a moment for the port session to close first
 os.execve("/bin/sh", ["sh", "-c", 'sleep 3; exec /data/rgds/azahar/run3ds.sh "$0"', rom],
-          {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin"})
+          {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+           # pinned to its own Azahar build: changes made for other games never touch it
+           "CORE": "/data/rgds/azahar/cores/azahar-oot.so"})
 PY

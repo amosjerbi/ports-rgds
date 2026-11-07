@@ -19,6 +19,10 @@ No ROMs, keys, or saves are included. Bring your own dumped `.3ds`/`.cci` game.
   * `RGDS_PLAY_TOP_DISPLAY=1`: when the player runs on its own, SDL's display 0 is DSI-1, the **lower** panel. Without
     this the game lands on the bottom panel and the touch screen on the top.
   * `RGDS_PLAY_SWAP_AB=1`: A and B trade places for the game. Remove the line for the original mapping.
+* **One core per game.** `run3ds.sh` loads `$CORE` if a launcher sets it, otherwise `azahar_libretro.so`. Each launcher
+  pins its game to its own build in `/data/rgds/azahar/cores/`, so an Azahar change made for one game leaves the
+  others alone. Ocarina of Time 3D stays on the plain build (`azahar-oot.so`). A Link Between Worlds uses the patched
+  one (`azahar-albw.so`, the `bin/azahar_libretro.so` here).
 * The launcher can't list `.3ds` files: its extensions are compiled in, and the release is SHA-256-checked at every
   launch. So each game gets a **Ports** entry instead. Ports only appear with *Settings → Library → Show all systems* on.
 
@@ -34,6 +38,7 @@ No ROMs, keys, or saves are included. Bring your own dumped `.3ds`/`.cci` game.
 mkdir -p /data/rgds/azahar /data/roms/3ds
 # from this folder on your computer (dropbear has no sftp, so pipe through cat):
 ssh root@rgds.local 'cat > /data/rgds/azahar/azahar_libretro.so' < bin/azahar_libretro.so
+ssh root@rgds.local 'mkdir -p /data/rgds/azahar/cores; cp /data/rgds/azahar/azahar_libretro.so /data/rgds/azahar/cores/azahar-oot.so; cp /data/rgds/azahar/azahar_libretro.so /data/rgds/azahar/cores/azahar-albw.so'
 ssh root@rgds.local 'cat > /data/rgds/azahar/rgds-play'          < bin/rgds-play
 ssh root@rgds.local 'cat > /data/rgds/azahar/run3ds.sh'          < scripts/run3ds.sh
 ssh root@rgds.local 'cat > "/data/portmaster/ports/Zelda Ocarina of Time 3D.sh"' < "port/Zelda Ocarina of Time 3D.sh"

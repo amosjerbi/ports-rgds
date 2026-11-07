@@ -20,11 +20,12 @@ done
 [ "$FRAMES" -gt 0 ] && export RGDS_PLAY_QUIT_AT=$FRAMES RGDS_PLAY_SHOTS=$AZ/shots RGDS_PLAY_SHOT_EVERY=300
 mkdir -p $AZ/home $AZ/shots $AZ/data /data/rgds/bios
 # the main loop on CPU 3 at real-time priority (as the launcher runs games), helper threads on all four cores
+# CORE=path: a game pinned to its own Azahar build (cores/), so a change for one game leaves the others alone
 export RGDS_PLAY_CPU=3
 # SDL display 0 (DSI-1) is the lower panel when rgds-play runs on its own
 export RGDS_PLAY_TOP_DISPLAY=1
 # A and B trade places (the user prefers it)
 export RGDS_PLAY_SWAP_AB=1
 taskset -c 0-3 ${PLAY:-$AZ/rgds-play} --rom "$ROM" --data $AZ/data --fonts $APP/assets/fonts \
-    --core $AZ/azahar_libretro.so --system 3ds --system-dir /data/rgds/bios --no-companion
+    --core "${CORE:-$AZ/azahar_libretro.so}" --system 3ds --system-dir /data/rgds/bios --no-companion
 echo "rgds-play exit $?"

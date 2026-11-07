@@ -27,5 +27,7 @@ null = os.open("/dev/null", os.O_RDONLY); os.dup2(null, 0)
 os.execve("/bin/sh", ["sh", "-c", 'sleep 3; exec /data/rgds/azahar/run3ds.sh "$0"', rom],
           {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
            # this game has thousands of shader programs: a disk cache loads them all at start (out of memory)
-           "EXTRA_OPTS": "citra_use_disk_shader_cache=disabled"})
+           "EXTRA_OPTS": "citra_use_disk_shader_cache=disabled",
+           # its own Azahar build (geometry-shader and buffer patches); other games keep theirs
+           "CORE": "/data/rgds/azahar/cores/azahar-albw.so"})
 PY
