@@ -27,5 +27,10 @@ for w,(name,sky,dec,st,dn,ink) in W.items():
         q3=[(157,117,115),(128,84,80),(102,52,50),(48,24,26)]
         bg=[q0,q1,q2,q3,q1,q2,q3,ov['bg'][7]]
     if w==1: bg=ov['bg']       # Big-City: exactly the 1-1 / 1-2 palettes
-    out.append({'world':w,'name':name,'bg':[[list(map(float,c)) for c in p] for p in bg],'obj':ov['obj']})
+    obj=[list(p) for p in ov['obj']]
+    # Pauline (palettes 5-7 are derived with OBP1: shade0 unused, shade1 = idx2, shade2 = idx3, shade3 = idx1)
+    obj[5]=[(0,0,0),(252,214,64),(254,234,214),(72,40,24)]      # head: yellow hair, light skin, dark outline
+    obj[6]=[(0,0,0),(255,255,255),(244,200,164),(56,44,88)]     # body: white dress, skin, outline
+    obj[7]=[(0,0,0),(0,0,0),(220,40,44),(255,255,255)]          # HELP balloon: red, white words and border
+    out.append({'world':w,'name':name,'bg':[[list(map(float,c)) for c in p] for p in bg],'obj':[[list(map(float,c)) for c in p] for p in obj]})
 json.dump({'themes':out,'cls':ov['cls']},open('out/themes.json','w')); print('saved out/themes.json')

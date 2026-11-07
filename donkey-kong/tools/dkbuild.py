@@ -58,9 +58,18 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
     for b,addr,data in maps:
         o=b*0x4000+addr-0x4000; assert all(x==0xff for x in rom[o:o+len(data)]); rom[o:o+len(data)]=data
     print('stage maps',len(maps),'bytes',sum(len(m[2]) for m in maps))
-    blob4+=bytes(blob5)+bytes(slots)
+    pj=json.load(open(os.path.join(ROOT,'data','pauline.json'))); psteps=sorted(int(k) for k in pj if int(k)>=13); idx=bytearray(); rec=bytearray()
+    for st in psteps:
+        idx+=_st.pack('<H',st); r=pj[str(st)]
+        for role in ('head','body','bubble'):
+            ids=sorted(int(k,16) for k,v in r.items() if v==role); assert len(ids)=={'head':4,'body':6,'bubble':2}[role],(st,role,ids)
+            rec+=bytes(ids)
+    idx+=b'\xff\xff'; assert len(idx)<=48
+    idx+=bytes(48-len(idx))
+    blob4+=bytes(blob5)+bytes(slots); paulidx=0x7002+len(blob2)+len(blob3)+len(blob4); blob4+=bytes(idx); paulrec=0x7002+len(blob2)+len(blob3)+len(blob4); blob4+=bytes(rec)
+    a_paul=(paulidx,paulrec)
     assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3)+bytes(blob4)); assert 0x7002+len(sec[0x0c][1])<=0x8000
-    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128; a.sym['OVRDTAB']=a.sym['OVRDG']+256; a.sym['OVRSLOT']=a.sym['OVRDTAB']+331
+    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128; a.sym['OVRDTAB']=a.sym['OVRDG']+256; a.sym['OVRSLOT']=a.sym['OVRDTAB']+331; a.sym['PAULIDX']=a_paul[0]; a.sym['PAULREC']=a_paul[1]
     a.include(os.environ.get('HOOKS') or os.path.join(ROOT,'color','hooks.s')); code=a.link(); S=a.sym
     json.dump({k:v for k,v in S.items() if isinstance(v,int)},open(os.path.join(ROOT,'out','syms.json'),'w'))
     lo,hi=min(code),max(k for k in code if k<0x4000)
@@ -95,6 +104,13 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
             if 0x10000<=i<0x14000 and lo&m and hi&m: rom[i+2*row+1]=hi&~m; n+=1
             i=orig.find(tile,i+1)
         print('mario eye tile %s row %d col %d: %d copies'%(th[:8],row,col,n))
+    for th in json.load(open(os.path.join(ROOT,'data','pauline_tiles.json'))):   # Pauline's upper dress: idx2 -> idx3 so the head palette shows it light (hair stays yellow)
+        tile=bytes.fromhex(th); i=orig.find(tile); n=0
+        while i>=0:
+            for r in range(8):
+                lo,hi=rom[i+2*r],rom[i+2*r+1]; rom[i+2*r]=lo|(hi&~lo)
+            n+=1; i=orig.find(tile,i+1)
+        print('pauline dress tile',th[:8],n,'copies')
     rom[0x143]=0x80                                          # CGB-compatible
     c=0
     for i in range(0x134,0x14d): c=(c-rom[i]-1)&0xff

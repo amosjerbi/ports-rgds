@@ -1196,6 +1196,67 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld de,OBJCLS
     ld bc,256
     call COPYBK
+    ld a,$0c                ; Pauline stages: her head / body / HELP balloon tiles get their own sprite palettes
+    ld hl,PAULIDX
+    ld de,$de00
+    ld bc,48
+    call COPYBK
+    ld hl,$de00
+    ld c,0
+.pl:
+    ld a,(hl+)
+    ld b,a                  ; step lo
+    ld a,(hl+)              ; step hi
+    cp $ff
+    jr z,.pdone
+    ld d,a
+    ld a,(OVRSH)
+    cp d
+    jr nz,.pn
+    ld a,(OVRSL)
+    cp b
+    jr z,.pf
+.pn:
+    inc c
+    jr .pl
+.pf:
+    ld a,c                  ; record = PAULREC + c*12
+    add a,a
+    ld l,a
+    ld h,0
+    add hl,hl
+    ld d,h
+    ld e,l
+    add hl,hl
+    add hl,de
+    ld de,PAULREC
+    add hl,de
+    ld a,$0c
+    ld de,$de00
+    ld bc,12
+    call COPYBK
+    ld hl,$de00
+    ld b,0
+.pc:
+    ld a,(hl+)
+    ld e,a
+    ld d,$d7
+    ld a,b
+    cp 4
+    ld a,5
+    jr c,.pset
+    ld a,b
+    cp 10
+    ld a,6
+    jr c,.pset
+    ld a,7
+.pset:
+    ld (de),a
+    inc b
+    ld a,b
+    cp 12
+    jr nz,.pc
+.pdone:
     jp .on
 
 .apply:
