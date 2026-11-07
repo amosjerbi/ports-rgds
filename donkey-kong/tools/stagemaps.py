@@ -38,12 +38,32 @@ def pal_for(t):
     if k in known: return max(set(known[k]),key=known[k].count)
     if k not in cache: cache[k]=kp[int(((kf-feat(t))**2).sum(1).argmin())]
     return cache[k]
+def ambiguous(t):
+    k=t.tobytes()
+    if k in known:
+        c=known[k]; top=max(set(c),key=c.count)
+        return len(set(c))>1 and c.count(top)<0.9*len(c)
+    return False
+def resolve(tl,tm,rows):
+    g=[[pal_for(tl[tm[r][c]]) for c in range(20)] for r in range(rows)]
+    amb=[[ambiguous(tl[tm[r][c]]) for c in range(20)] for r in range(rows)]
+    out_=[row[:] for row in g]
+    for r in range(rows):
+        for c in range(20):
+            if not amb[r][c]: continue
+            best=None
+            for dist in range(1,12):          # nearest unambiguous cell: same row first (left, right), then column
+                for rr,cc in ((r,c-dist),(r,c+dist),(r-dist,c),(r+dist,c)):
+                    if 0<=rr<rows and 0<=cc<20 and not amb[rr][cc]: best=g[rr][cc]; break
+                if best is not None: break
+            if best is not None: out_[r][c]=best
+    return out_
 for i,v in out.items():
     if not (13<=i<39) or i in (16,19): continue
     tm=d['tm%d'%i]; tl=d['tl%d'%i]
     if v['kind']=='S':
-        v['map']=[[pal_for(tl[tm[r][c]]) for c in range(20)] for r in range(18)]; v['map'][0]=[7]*20
-    else: v['map']=[[pal_for(tl[tm[r][c]]) for c in range(20)] for r in range(32)]
+        v['map']=resolve(tl,tm,18); v['map'][0]=[7]*20
+    else: v['map']=resolve(tl,tm,32)
     print('world1 stage',i,v['kind'])
 json.dump(out,open('out/stagemaps.json','w'))
 from collections import Counter

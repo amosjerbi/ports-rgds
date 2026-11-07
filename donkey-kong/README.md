@@ -19,7 +19,7 @@ plain DMG or a real SGB the game's original code path still runs.
 * Apply to **your own** copy of the original ROM
   (SHA-1 `6ed661bd1d6d8cdd48e1c10f8ca4e8dcba49128e`, 512 KB, *Donkey Kong (Japan, USA) (En) (SGB Enhanced)*).
 * `python3 apply_patch.py original.gb dk-color.ips dk-color.gb` (or any IPS patcher, e.g. Flips).
-  The patched ROM has SHA-1 `3c36c9d6e0287fe046e5999baff6ef1bcb5dc3fc`.
+  The patched ROM has SHA-1 `8094727c69fe7bb8578f176050f65f25f2cf28a1`.
 * Run it in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 * **No ROM is included in this repository.** Only the patch (my own code and colour data) and the build sources.
 
