@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="screens/Big-City-1-2.png" alt="Donkey Kong (GB), Big-City 1-2 in Game Boy Color colour" width="480">
+  <img src="screens/Big-City-1-1.png" alt="Donkey Kong (GB), Big-City 1-1 in Game Boy Color colour" width="480">
 </p>
 
 # Donkey Kong (Game Boy, SGB Enhanced) — Game Boy Color colour patch
@@ -10,9 +10,9 @@ plain DMG or a real SGB the game's original code path still runs.
 
 ### Screens
 
-| ![Big-City 1-2](screens/Big-City-1-2.png) | ![Big-City scrolling stage](screens/Big-City-scrolling.png) | ![Forest 2-1](screens/Forest-2-1.png) |
+| ![Big-City 1-1](screens/Big-City-1-1.png) | ![Big-City 1-2](screens/Big-City-1-2.png) | ![Forest 2-1](screens/Forest-2-1.png) |
 |:--:|:--:|:--:|
-| Big-City 1-2 | Big-City scrolling stage | Forest 2-1 |
+| Big-City 1-1 | Big-City 1-2 (scrolls vertically) | Forest 2-1 |
 
 ![Classic stages with a brown Donkey Kong](screens/Classic-stages.png)
 
@@ -31,10 +31,29 @@ plain DMG or a real SGB the game's original code path still runs.
 * The game redraws with a chain of scan-line interrupts; the interrupt vectors are wrapped (WRAM bank switch) and the
   VBlank is held back while a scan-line handler runs, which fixes a once-per-few-seconds blank-frame flicker.
 * **Hand-made stage looks** (override on top of the SGB colours, selected by the level counter `$C85C`):
-  * Big-City 1-2 — sky, lilac tower, tan building, brown-red girders, green blocks, gold key and lock, dark HUD.
-  * The scrolling Big-City stage — same look, with a map indexed by background row so colours follow the scroll.
+  * Big-City 1-1 — sky, lilac tower, tan building, brown-red girders, green blocks, gold key and lock, dark HUD.
+  * Big-City 1-2 (the vertically scrolling stage) — same look, with a map indexed by background row so colours follow the scroll.
   * Forest 2-1 — the pink trunk shade is blue; Mario, turtles, spiky enemies and the boar each have their own palette.
 * Donkey Kong is brown and beige in the classic stages 2, 3 and 4 (his tiles differ per stage).
+
+## All worlds
+Every stage of worlds 1–9 (plus the four classic stages) as the patched ROM renders it today. Only Big-City 1-1, 1-2 and
+Forest 2-1 have the hand-made look; every other stage still shows the game's own SGB colours.
+
+| World | Stages | Screenshots |
+|:--|:--:|:--|
+| Classic | 4 | [classic](screens/worlds/classic.png) |
+| 1 Big-City | 8 | [world 1](screens/worlds/world-1-big-city.png) |
+| 2 Forest | 12 | [world 2](screens/worlds/world-2-forest.png) |
+| 3 Ship | 8 | [world 3](screens/worlds/world-3-ship.png) |
+| 4 Jungle | 12 | [world 4](screens/worlds/world-4-jungle.png) |
+| 5 Desert | 12 | [world 5](screens/worlds/world-5-desert.png) |
+| 6 Airplane | 8 | [world 6](screens/worlds/world-6-airplane.png) |
+| 7 Iceberg | 12 | [world 7](screens/worlds/world-7-iceberg.png) |
+| 8 Rocky-Valley | 16 | [world 8](screens/worlds/world-8-rocky-valley.png) |
+| 9 Tower | 9 | [world 9](screens/worlds/world-9-tower.png) |
+
+![World 1, Big-City](screens/worlds/world-1-big-city.png)
 
 ## Known limits
 * Only those stages have the hand-made look; every other stage uses the game's own SGB colours (washed-out pastel).
