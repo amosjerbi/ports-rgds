@@ -20,8 +20,12 @@ for w,(name,sky,dec,st,dn,ink) in W.items():
     p2=[mix(sky,st,.3),mix(sky,st,.65),st,ink]
     p3=[mix(st,dn,.3),mix(st,dn,.7),dn,ink]
     bg=[p0,p1,p2,p3,p1,p2,p3,ov['bg'][7]]
-    if w==8:  # purple cliffs (light shades) that turn brown where the tile is dense (boulders)
-        p1=[(204,178,232),(158,120,196),(142,96,68),ink]; bg=[p0,p1,p2,p3,p1,p2,p3,ov['bg'][7]]
+    if w==8:   # colours drawn from the Big-City 1-1 palettes: sky blue, lilac, tan, brown-red girders
+        q0=[(164,219,249),(130,185,230),(99,130,164),(39,59,92)]
+        q1=[(195,193,225),(172,170,208),(152,150,193),(77,48,64)]
+        q2=[(225,204,194),(196,164,140),(168,102,103),(62,42,52)]
+        q3=[(157,117,115),(128,84,80),(102,52,50),(48,24,26)]
+        bg=[q0,q1,q2,q3,q1,q2,q3,ov['bg'][7]]
     if w==1: bg=ov['bg']       # Big-City: exactly the 1-1 / 1-2 palettes
     out.append({'world':w,'name':name,'bg':[[list(map(float,c)) for c in p] for p in bg],'obj':ov['obj']})
 json.dump({'themes':out,'cls':ov['cls']},open('out/themes.json','w')); print('saved out/themes.json')
