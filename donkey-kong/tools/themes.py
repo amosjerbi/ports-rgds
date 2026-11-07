@@ -1,33 +1,24 @@
-"""World themes for the stages that have no hand-made look: one BG palette (4 shades) + character palettes per world.
--> out/themes.json   (worlds 1..9; stage ranges are in color/hooks.s THTAB)"""
+"""World themes -> out/themes.json: per world 8 BG palettes (class 0 sky, 1 decor, 2 structure, 3 dense, 7 HUD) + shared character palettes/classes (from 1-1)."""
 import json
-# by displayed shade: 0 lightest .. 3 darkest
-BG={
- 1:('Big-City',    [(236,238,240),(214,140,110),(96,128,176),(32,36,56)]),
- 2:('Forest',      [(233,232,200),(96,144,208),(110,174,16),(41,16,65)]),
- 3:('Ship',        [(216,240,244),(120,184,207),(140,104,72),(32,40,60)]),
- 4:('Jungle',      [(228,239,200),(143,207,90),(63,138,42),(27,42,20)]),
- 5:('Desert',      [(246,236,200),(232,184,106),(176,116,58),(58,36,18)]),
- 6:('Airplane',    [(232,242,251),(168,200,238),(108,136,180),(32,40,64)]),
- 7:('Iceberg',     [(238,248,255),(180,220,244),(106,160,208),(28,44,76)]),
- 8:('Rocky-Valley',[(240,228,208),(200,160,112),(138,94,58),(44,30,24)]),
- 9:('Tower',       [(228,236,240),(160,184,200),(88,112,136),(28,36,48)]),
+W={ # name, sky, decor, structure, dense, ink
+ 1:('Big-City',(196,222,250),(150,170,206),(206,126,100),(96,84,110),(30,26,48)),
+ 2:('Forest',(210,236,250),(120,190,90),(176,124,72),(48,100,52),(28,24,40)),
+ 3:('Ship',(200,226,240),(110,170,190),(176,124,84),(48,72,104),(26,30,48)),
+ 4:('Jungle',(222,240,190),(90,170,70),(196,154,92),(40,92,44),(24,32,24)),
+ 5:('Desert',(250,236,190),(236,200,120),(204,142,82),(112,72,42),(44,28,20)),
+ 6:('Airplane',(190,214,248),(232,242,252),(130,152,192),(62,82,122),(26,32,56)),
+ 7:('Iceberg',(212,238,252),(170,214,240),(120,170,214),(60,100,152),(24,36,66)),
+ 8:('Rocky-Valley',(242,216,178),(208,162,112),(152,102,66),(82,54,38),(38,26,22)),
+ 9:('Tower',(214,224,238),(170,182,204),(128,140,168),(60,68,92),(26,30,46)),
 }
-def shade_pal(by_idx,reg):
-    out=[None]*4
-    for i in range(4): out[(reg>>(2*i))&3]=by_idx[i]
-    for s in range(4):
-        if out[s] is None: out[s]=by_idx[0]
-    return out
-mario=[(0,0,0),(8,0,64),(240,190,150),(208,32,32)]
-enemy=[(0,0,0),(40,16,24),(204,92,60),(250,230,200)]
-hammer=[(0,0,0),(56,24,8),(120,72,32),(200,120,56)]
-OBP0,OBP1=0x1e,0x9c
-ov=json.load(open('data/ovr12.json'))
+def mix(a,b,t): return tuple(a[i]*(1-t)+b[i]*t for i in range(3))
+ov=json.load(open('data/ovr12.json')) if __import__('os').path.exists('data/ovr12.json') else json.load(open('out/ovr12.json'))
 out=[]
-for w in range(1,10):
-    name,c=BG[w]
-    objs=ov['obj']
-    out.append({'world':w,'name':name,'bg':[[list(map(float,x)) for x in c]]*8,'obj':objs})
-cls=ov['cls']
-json.dump({'themes':out,'cls':cls},open('data/themes.json','w')); print('saved out/themes.json')
+for w,(name,sky,dec,st,dn,ink) in W.items():
+    p0=[sky,mix(sky,dec,.5),dec,ink]
+    p1=[mix(sky,dec,.35),mix(sky,dec,.7),dec,ink]
+    p2=[mix(sky,st,.3),mix(sky,st,.65),st,ink]
+    p3=[mix(st,dn,.3),mix(st,dn,.7),dn,ink]
+    bg=[p0,p1,p2,p3,p1,p2,p3,ov['bg'][7]]
+    out.append({'world':w,'name':name,'bg':[[list(map(float,c)) for c in p] for p in bg],'obj':ov['obj']})
+json.dump({'themes':out,'cls':ov['cls']},open('data/themes.json','w')); print('saved out/themes.json')

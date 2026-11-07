@@ -19,7 +19,7 @@ plain DMG or a real SGB the game's original code path still runs.
 * Apply to **your own** copy of the original ROM
   (SHA-1 `6ed661bd1d6d8cdd48e1c10f8ca4e8dcba49128e`, 512 KB, *Donkey Kong (Japan, USA) (En) (SGB Enhanced)*).
 * `python3 apply_patch.py original.gb dk-color.ips dk-color.gb` (or any IPS patcher, e.g. Flips).
-  The patched ROM has SHA-1 `0ee193e89a27109eb3335177cc22f894d37747e8`.
+  The patched ROM has SHA-1 `5695ec51f6f74895de69e05a0a20f82237274b81`.
 * Run it in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 * **No ROM is included in this repository.** Only the patch (my own code and colour data) and the build sources.
 
@@ -34,14 +34,16 @@ plain DMG or a real SGB the game's original code path still runs.
   * Big-City 1-1 — sky, lilac tower, tan building, brown-red girders, green blocks, gold key and lock, dark HUD.
   * Big-City 1-2 (the vertically scrolling stage) — same look, with a map indexed by background row so colours follow the scroll.
   * Forest 2-1 — the pink trunk shade is blue; Mario, turtles, spiky enemies and the boar each have their own palette.
-* **World themes** (`data/themes.json`, `tools/themes.py`): all other play stages get a per-world palette instead of the game's
-  purple/beige SGB colours — Big-City blue/brick, Forest green/blue, Ship pale blue, Jungle green, Desert sand, Airplane sky blue,
-  Iceberg icy blue, Rocky-Valley brown, Tower grey-blue. Characters reuse the 1-1 look.
+* **World themes + per-stage attribute maps**: every other play stage uses its world's palettes (`tools/themes.py`):
+  sky, decor (foliage / ice / clouds), structure (girders, bricks, rock), dense blocks and ink each get their own palette,
+  like the hand-made Big-City look. Static stages (47) get a 20x18 map and vertically scrolling stages (35) a 20x32 map,
+  classified from the tile graphics (`tools/stagecap.py`, `tools/stagemaps.py` -> `data/stagemaps.json`, stored in free
+  ROM space). The 19 horizontally scrolling stages still use one flat palette per world.
 * Donkey Kong is brown and beige in the classic stages 2, 3 and 4 (his tiles differ per stage).
 
 ## All worlds
 Every stage of worlds 1–9 (plus the four classic stages) as the patched ROM renders it today. Big-City 1-1, 1-2 and
-Forest 2-1 have the hand-made look; every other stage uses its world's colour theme (one palette per world).
+Forest 2-1 have the hand-made look; every other stage uses its world's themed palettes and a tile-classified map.
 
 | World | Stages | Screenshots |
 |:--|:--:|:--|
@@ -59,7 +61,7 @@ Forest 2-1 have the hand-made look; every other stage uses its world's colour th
 ![World 1, Big-City](screens/worlds/world-1-big-city.png)
 
 ## Known limits
-* Only three stages have the hand-made look; the rest use one flat theme palette per world (no per-tile colouring).
+* Only three stages are hand-made; the rest are classified automatically from tile brightness, so some tiles (items, keys) share the structure colour. Horizontally scrolling stages are one flat palette per world.
 * Donkey Kong is still green in the very first classic stage: recolouring him there needs a sprite pass inside VBlank,
   which overruns VBlank on accurate emulators (SameBoy, the RG DS core) and garbles the tile uploads. The build is
   available as `DMA=1 ./make.sh` for experiments, but it is **not** what `dk-color.ips` contains.

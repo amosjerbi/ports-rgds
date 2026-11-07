@@ -42,9 +42,26 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
             for c in pal: blob4+=_st.pack('<H',c15(c))
     assert len(blob4)==9*128
     ovdt=ovdc+len(blob3); blob4+=bytes(th['cls']); ovdg=ovdt+9*128; assert ovdt+len(blob4)<=0x8000
-    assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3)+bytes(blob4))
-    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128
-    a.include(os.path.join(ROOT,'color','hooks.s')); code=a.link(); S=a.sym
+    sm=json.load(open(os.path.join(ROOT,'data','stagemaps.json'))); maps=[]; blob5=bytearray(331); slots=bytearray()
+    free={}
+    for b in (1,2,3,4,5,6,9,15,17,20,21,24,26,28,30):
+        seg=rom[b*0x4000:(b+1)*0x4000]; n=len(seg)
+        while seg[n-1]==0xff: n-=1
+        free[b]=[0x4000+n+2,0x8000]            # next free address, end (2 bytes safety)
+    for step,v in sorted(sm.items(),key=lambda kv:int(kv[0])):
+        data=bytes(c for row in v['map'] for c in row); kind=1 if v['kind']=='V' else 0
+        for b in sorted(free,key=lambda b:free[b][1]-free[b][0]):
+            if free[b][1]-free[b][0]>=len(data): break
+        else: raise SystemExit('no room for stage map')
+        addr=free[b][0]; free[b][0]+=len(data); maps.append((b,addr,data))
+        blob5[int(step)]=len(slots)//4+1; slots+=bytes([b,addr&255,addr>>8,kind])
+    for b,addr,data in maps:
+        o=b*0x4000+addr-0x4000; assert all(x==0xff for x in rom[o:o+len(data)]); rom[o:o+len(data)]=data
+    print('stage maps',len(maps),'bytes',sum(len(m[2]) for m in maps))
+    blob4+=bytes(blob5)+bytes(slots)
+    assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3)+bytes(blob4)); assert 0x7002+len(sec[0x0c][1])<=0x8000
+    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128; a.sym['OVRDTAB']=a.sym['OVRDG']+256; a.sym['OVRSLOT']=a.sym['OVRDTAB']+331
+    a.include(os.environ.get('HOOKS') or os.path.join(ROOT,'color','hooks.s')); code=a.link(); S=a.sym
     json.dump({k:v for k,v in S.items() if isinstance(v,int)},open(os.path.join(ROOT,'out','syms.json'),'w'))
     lo,hi=min(code),max(k for k in code if k<0x4000)
     for k,v in code.items():

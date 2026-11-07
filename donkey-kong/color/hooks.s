@@ -37,6 +37,12 @@ CPAL  = $dc00   ; derived CGB palettes: 8 BG (64 B), 4 OBJ(OBP0), 4 OBJ(OBP1) (3
 OVRON = $df40   ; stage colour override active (Big-City 1-2)
 HUDW  = $df41   ; window-map row 0 attribute to write at the next idle VBlank (palette+1), 0 = none
 BGSP  = $df45   ; 1 = override map is indexed by BG row (scrolling stages), 0 = by screen row
+OVRSL = $df48   ; step loaded by the world theme (lo / hi)
+OVRSH = $df49
+TMPS  = $df4a   ; slot record: bank, addr lo, addr hi, kind
+TMPA  = $df4b
+TMPB  = $df4c
+TMPK  = $df4d
 OVRTH = $df47   ; world theme number 1..9 loaded (stage selector 3)
 OVRSEL= $df46   ; which stage override is loaded (0 = Big-City 1-2, 1 = scrolling city stage)
 BGMAP = $d800   ; 20 x 32 override map in BG coordinates
@@ -1099,8 +1105,11 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld a,(OVRSEL)
     cp 3
     jr nz,.tap
-    ld a,(OVRTH)
-    cp c
+    ld a,(OVRSL)
+    cp e
+    jr nz,.tap
+    ld a,(OVRSH)
+    cp d
     jr nz,.tap
     ld a,(FLG)
     and 3
@@ -1108,6 +1117,10 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
 .tap:
     ld a,c
     ld (OVRTH),a
+    ld a,e
+    ld (OVRSL),a
+    ld a,d
+    ld (OVRSH),a
     jp .apply
 .st4:                       ; world theme: palettes by world, empty map, shared character classes
     xor a
@@ -1134,6 +1147,50 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld a,b
     or c
     jr nz,.z
+    ld a,(OVRSL)            ; per-stage attribute map (slot table in bank $0c), if this stage has one
+    ld l,a
+    ld a,(OVRSH)
+    ld h,a
+    ld de,OVRDTAB
+    add hl,de
+    ld a,$0c
+    ld de,TMPS
+    ld bc,1
+    call COPYBK
+    ld a,(TMPS)
+    and a
+    jr z,.nomap
+    dec a
+    ld l,a
+    ld h,0
+    add hl,hl
+    add hl,hl
+    ld de,OVRSLOT
+    add hl,de
+    ld a,$0c
+    ld de,TMPS
+    ld bc,4
+    call COPYBK
+    ld a,(TMPA)
+    ld l,a
+    ld a,(TMPB)
+    ld h,a
+    ld a,(TMPK)
+    and a
+    jr nz,.vmap
+    ld a,(TMPS)
+    ld de,MAP
+    ld bc,360
+    call COPYBK
+    jr .nomap
+.vmap:
+    ld a,(TMPS)
+    ld de,BGMAP
+    ld bc,640
+    call COPYBK
+    ld a,1
+    ld (BGSP),a
+.nomap:
     ld a,$0c
     ld hl,OVRDG
     ld de,OBJCLS
