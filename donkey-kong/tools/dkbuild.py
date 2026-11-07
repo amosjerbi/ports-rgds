@@ -67,9 +67,11 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
     idx+=b'\xff\xff'; assert len(idx)<=48
     idx+=bytes(48-len(idx))
     blob4+=bytes(blob5)+bytes(slots); paulidx=0x7002+len(blob2)+len(blob3)+len(blob4); blob4+=bytes(idx); paulrec=0x7002+len(blob2)+len(blob3)+len(blob4); blob4+=bytes(rec)
-    a_paul=(paulidx,paulrec)
+    paulpal=0x7002+len(blob2)+len(blob3)+len(blob4)
+    for w in (0x0000,0x0888,0x1f5e,0x6b9e, 0x0000,0x28a6,0x7fff,0x4f1d, 0x0000,0x7fff,0x0000,0x149a): blob4+=_st.pack('<H',w)   # classic Pauline: head, body, balloon (raw index order)
+    a_paul=(paulidx,paulrec,paulpal)
     assert 0x0c not in sec; sec[0x0c]=(0x7002,bytes(blob2)+bytes(blob3)+bytes(blob4)); assert 0x7002+len(sec[0x0c][1])<=0x8000
-    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128; a.sym['OVRDTAB']=a.sym['OVRDG']+256; a.sym['OVRSLOT']=a.sym['OVRDTAB']+331; a.sym['PAULIDX']=a_paul[0]; a.sym['PAULREC']=a_paul[1]
+    a=gbasm.Asm(); a.sym['DPAL']=sym['DPAL'][1]; a.sym['ATFTAB']=sym['ATFTAB'][1]; a.sym['OVRD']=ovrd; a.sym['OVRD2']=0x7002; a.sym['OVRDC']=0x7002+896; a.sym['OVRDT']=0x7002+896+744; a.sym['OVRDG']=0x7002+896+744+9*128; a.sym['OVRDTAB']=a.sym['OVRDG']+256; a.sym['OVRSLOT']=a.sym['OVRDTAB']+331; a.sym['PAULIDX']=a_paul[0]; a.sym['PAULREC']=a_paul[1]; a.sym['PALHEAD']=a_paul[2]; a.sym['PALBUB']=a_paul[2]+16
     a.include(os.environ.get('HOOKS') or os.path.join(ROOT,'color','hooks.s')); code=a.link(); S=a.sym
     json.dump({k:v for k,v in S.items() if isinstance(v,int)},open(os.path.join(ROOT,'out','syms.json'),'w'))
     lo,hi=min(code),max(k for k in code if k<0x4000)

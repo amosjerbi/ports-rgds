@@ -43,6 +43,10 @@ TMPS  = $df4a   ; slot record: bank, addr lo, addr hi, kind
 TMPA  = $df4b
 TMPB  = $df4c
 TMPK  = $df4d
+PLE   = $df51   ; published end pointer (set when a full pass finished)
+PLN   = $df50   ; end pointer of the Pauline slot list at $de21 (addr low, class pairs)
+PLON  = $df4e   ; Pauline palettes active (classic stages)
+PLSTEP= $df4f   ; step they were set up for
 OVRTH = $df47   ; world theme number 1..9 loaded (stage selector 3)
 OVRSEL= $df46   ; which stage override is loaded (0 = Big-City 1-2, 1 = scrolling city stage)
 BGMAP = $d800   ; 20 x 32 override map in BG coordinates
@@ -651,6 +655,15 @@ OVRCALL1:
     ld a,(RB)
     rst $10
     ret
+OVRCALL3:                   ; VBlank context: the interrupted code's bank is in $ff8c
+    ldh a,($8c)
+    push af
+    ld a,$0d
+    rst $10
+    call PLFIX
+    pop af
+    rst $10
+    ret
 OVRCALL2:
     ld a,$0d
     rst $10
@@ -793,6 +806,8 @@ BUILD:
 
 ; ---- OBJ palette bits from the cell under each sprite (SVBK 4) ------------------------------
 OBJPASS:
+    ld a,$21
+    ld (PLN),a
     ld hl,$c000
     ld b,40
     ld a,(OVRON)
@@ -822,9 +837,9 @@ OBJPASS:
 .o:
     ld a,(hl+)              ; y
     and a
-    jr z,.skip3
+    jp z,.skip3
     cp 160
-    jr nc,.skip3
+    jp nc,.skip3
     sub 12
     jr nc,.y1
     xor a
@@ -839,7 +854,7 @@ OBJPASS:
     ld d,a
     ld a,(hl+)              ; x
     and a
-    jr z,.skip2
+    jp z,.skip2
     sub 4
     jr nc,.x1
     xor a
@@ -872,6 +887,31 @@ OBJPASS:
     dec hl
     ld a,(hl+)              ; tile
     ld e,a
+    ld d,$d7                ; classic stages: Pauline / balloon tiles (class table filled by PLSET)
+    ld a,(de)
+    and a
+    jr z,.dkchk
+    ld c,a                  ; final palette (no OBP1 +4)
+    ld a,(hl)
+    and $f0
+    or c
+    ld (hl),a
+    ld d,$de                ; remember the slot for the VBlank fix-up (hardware OAM after a late game OAM write)
+    ld a,(PLN)
+    ld e,a
+    ld a,l
+    ld (de),a
+    inc e
+    ld a,c
+    ld (de),a
+    inc e
+    ld a,e
+    ld (PLN),a
+    inc hl
+    dec b
+    jp nz,.o
+    jp PLPUB
+.dkchk:
     ld a,(DKLO)
     ld d,a
     ld a,e
@@ -895,17 +935,21 @@ OBJPASS:
     or d
     ld (hl+),a
     dec b
-    jr nz,.o
-    ret
+    jp nz,.o
+    jp PLPUB
 .skip3:
     inc hl
 .skip2:
     inc hl
     inc hl
     dec b
-    jr nz,.o
-    ret
+    jp nz,.o
+    jp PLPUB
 
+PLPUB:
+    ld a,(PLN)
+    ld (PLE),a
+    ret
 ; ---- VBlank hook: replaces `call $16e2` ---------------------------------------------------------
 H_DMA:                      ; replaces the VBlank OAM-DMA call: colour the sprites first (the game rewrites OAM after the main-loop pass)
     ld a,4
@@ -916,6 +960,13 @@ H_DMA:                      ; replaces the VBlank OAM-DMA call: colour the sprit
     jp $ff80
 H_VB2:
     call $16e2
+    ld a,4                  ; classic stages: colour Pauline's sprites in the hardware OAM right after the DMA
+    ldh ($70),a
+    ld a,(PLON)
+    and a
+    call nz,OVRCALL3
+    ld a,1
+    ldh ($70),a
     ldh a,($4f)
     cp $fe
     ret nz
@@ -1040,7 +1091,7 @@ COPYBK:
     ret
 
 .bank 0x0d
-.org $7c00
+.org $7bc4
 OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, bank $0d mapped)
     call DKSET
     ldh a,($8f)             ; the in-stage scan-line chain is running (it idles at 0 on the map scenes)
@@ -1056,12 +1107,7 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     inc b
     cp 19
     jr z,.chk
-    inc b                   ; stage 2: forest 2-1 (steps 41 = intro, 42 = play)
-    cp 41
-    jr z,.chk
-    cp 42
-    jr z,.chk
-    jp .th
+    jp .th                  ; forest 2-1 now uses the world-2 theme like the other forest stages
 .chk:
     ld a,(OVRON)
     and a
@@ -1134,10 +1180,9 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld l,a
     ld de,OVRDT
     add hl,de
-    ld a,$0c
     ld de,OVRP
     ld bc,128
-    call COPYBK
+    call CBK
     ld hl,MAP
     ld bc,360
 .z:
@@ -1153,10 +1198,9 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld h,a
     ld de,OVRDTAB
     add hl,de
-    ld a,$0c
     ld de,TMPS
     ld bc,1
-    call COPYBK
+    call CBK
     ld a,(TMPS)
     and a
     jr z,.nomap
@@ -1167,10 +1211,9 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     add hl,hl
     ld de,OVRSLOT
     add hl,de
-    ld a,$0c
     ld de,TMPS
     ld bc,4
-    call COPYBK
+    call CBK
     ld a,(TMPA)
     ld l,a
     ld a,(TMPB)
@@ -1191,11 +1234,10 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld a,1
     ld (BGSP),a
 .nomap:
-    ld a,$0c
     ld hl,OVRDG
     ld de,OBJCLS
     ld bc,256
-    call COPYBK
+    call CBK
     ld a,$0c                ; Pauline stages: her head / body / HELP balloon tiles get their own sprite palettes
     ld hl,PAULIDX
     ld de,$de00
@@ -1231,26 +1273,16 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     add hl,de
     ld de,PAULREC
     add hl,de
-    ld a,$0c
     ld de,$de00
     ld bc,12
-    call COPYBK
+    call CBK
     ld hl,$de00
     ld b,0
 .pc:
     ld a,(hl+)
     ld e,a
     ld d,$d7
-    ld a,b
-    cp 4
-    ld a,5
-    jr c,.pset
-    ld a,b
-    cp 10
-    ld a,6
-    jr c,.pset
-    ld a,7
-.pset:
+    call PLCLS
     ld (de),a
     inc b
     ld a,b
@@ -1287,10 +1319,9 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
     ld de,BGMAP
     ld bc,640
     call COPYBK
-    ld a,$0c
     ld de,OBJCLS
     ld bc,256
-    call COPYBK
+    call CBK
     jr .on
 .cls:
     ld de,OBJCLS
@@ -1300,19 +1331,16 @@ OVRSTEP:                    ; per frame, after packets were handled (SVBK 4, ban
 .st3:                       ; forest 2-1: own palettes + map + classes, all from bank $0c
     xor a
     ld (BGSP),a
-    ld a,$0c
     ld hl,OVRDC
     ld de,OVRP
     ld bc,128
-    call COPYBK
-    ld a,$0c
+    call CBK
     ld de,MAP
     ld bc,360
-    call COPYBK
-    ld a,$0c
+    call CBK
     ld de,OBJCLS
     ld bc,256
-    call COPYBK
+    call CBK
 .on:
     ld a,1
     ld (OVRON),a
@@ -1456,20 +1484,139 @@ DKSET:                      ; set DKLO/DKHI for the Donkey Kong stages (in-stage
     ld (DKHI),a
     ld hl,DKP
     cp (hl)
-    ret z
+    jr z,.pl
     ld (hl),a
     ld a,(FLG)
     or 1
     ld (FLG),a
-    ret
-DKPAL:                      ; overwrite OBJ palette 7 with the Donkey Kong colours
+.pl:
+    jp PLSET
+DKPAL:                      ; overwrite OBJ palette 7 with the Donkey Kong colours (+ Pauline: palettes 5, 6 and the balloon in 3)
     ld a,(DKHI)
     and a
     ret z
     ld hl,DKPALD
     ld de,CPAL+120
     ld bc,8
-    jp COPY
+    call COPY
+    ld a,(PLON)
+    and a
+    ret z
+    ld hl,PALHEAD
+    ld de,CPAL+104
+    ld bc,16
+    call CBK                ; head (5) + body (6), data in bank $0c
+    ld hl,PALBUB
+    ld de,CPAL+88
+    ld bc,8
+    jp CBK
+CBK:                        ; read from bank $0c (see COPYBK)
+    ld a,$0c
+    jp COPYBK
+PLCLS:                      ; a = class for Pauline tile number b (0-3 head 5, 4-9 body 6, 10-11 balloon 7)
+    ld a,b
+    cp 4
+    ld a,5
+    ret c
+    ld a,b
+    cp 10
+    ld a,6
+    ret c
+    ld a,7
+    ret
+PLFIX:                      ; VBlank: re-apply the recorded Pauline palettes to the hardware OAM (a few entries, VBlank is tight)
+    ld hl,$de21
+.l:
+    ld a,(PLE)
+    cp l
+    ret c
+    ret z
+    ld a,(hl+)
+    ld e,a
+    ld d,$fe
+    ld a,(hl+)
+    ld c,a
+    ld a,(de)
+    and $f0
+    or c
+    ld (de),a
+    jr .l
+PLSET:                      ; classic stages: tile -> palette class table for Pauline (OBJCLS is unused while no override is on)
+    ld a,(DKHI)
+    and a
+    jr nz,.on
+    xor a
+    ld (PLON),a
+    ret
+.on:
+    ld a,($c85c)
+    ld c,a
+    ld a,(PLON)
+    and a
+    jr z,.build
+    ld a,(PLSTEP)
+    cp c
+    ret z
+.build:
+    ld hl,PTAB
+    ld b,c                  ; step 11 shares step 8's tiles
+    ld a,c
+    cp 11
+    jr nz,.f
+    ld b,8
+.f:
+    ld a,(hl+)
+    cp $ff
+    jr z,.none
+    cp b
+    jr z,.got
+    ld de,12
+    add hl,de
+    jr .f
+.none:
+    xor a
+    ld (PLON),a
+    ret
+.got:
+    ld a,c
+    ld (PLSTEP),a
+    push hl
+    ld hl,OBJCLS
+    ld b,0
+    xor a
+.z:
+    ld (hl+),a
+    dec b
+    jr nz,.z
+    pop hl
+    ld b,0
+.s:
+    ld a,(hl+)
+    ld e,a
+    ld d,$d7
+    call PLCLS
+    cp 7
+    jr nz,.w
+    ld a,3
+.w:
+    ld (de),a
+    inc b
+    ld a,b
+    cp 12
+    jr nz,.s
+    ld a,$21
+    ld (PLE),a
+    ld a,1
+    ld (PLON),a
+    ld a,(FLG)
+    or 1
+    ld (FLG),a
+    ret
+PTAB:                       ; step, 4 head tiles, 6 body tiles, 2 balloon tiles
+    db 2,$e4,$e6,$f0,$f2,$e8,$ea,$ec,$ee,$f4,$f6,$f8,$fa
+    db 5,$c2,$c4,$ce,$d0,$c6,$c8,$ca,$cc,$d2,$d4,$d6,$d8
+    db 8,$b6,$b8,$c2,$c4,$ba,$bc,$be,$c0,$c6,$c8,$ca,$cc
+    db $ff
 DKTAB:                      ; step, first tile, last tile+1  (steps are the level-sequence counter $c85c)
     db 2,$90,$9e
     db 5,$50,$5e

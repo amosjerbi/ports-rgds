@@ -26,6 +26,12 @@ for w,(name,sky,dec,st,dn,ink) in W.items():
         q2=[(225,204,194),(196,164,140),(168,102,103),(62,42,52)]
         q3=[(157,117,115),(128,84,80),(102,52,50),(48,24,26)]
         bg=[q0,q1,q2,q3,q1,q2,q3,ov['bg'][7]]
+    if w==2:   # forest: tan tree trunks, green foliage, pink ladders / brick, brown logs (reference screenshot)
+        f0=[(248,208,152),(232,174,112),(196,126,74),(72,36,30)]
+        f1=[(196,228,190),(132,196,84),(84,148,52),(30,62,34)]
+        f2=[(255,240,214),(232,160,104),(176,96,56),(80,40,28)]
+        f3=[(228,150,84),(176,100,56),(120,60,36),(56,28,20)]
+        bg=[f0,f1,f2,f3,f1,f2,f3,ov['bg'][7]]
     if w==1: bg=ov['bg']       # Big-City: exactly the 1-1 / 1-2 palettes
     obj=[list(p) for p in ov['obj']]
     # Pauline (palettes 5-7 are derived with OBP1: shade0 unused, shade1 = idx2, shade2 = idx3, shade3 = idx1)
