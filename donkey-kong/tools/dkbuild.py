@@ -86,6 +86,15 @@ def build(orig,out,dump=os.path.join(ROOT,'out','sgb')):
     patch(0x0284,'cde216',call(S['H_VB2']))                  # VBlank VRAM queue -> + palette / attribute upload
     patch(0x3894,'fa2bc8',jp(S['H_SGB2']))                    # RAM-built packet sender (palette sets for gameplay / title shimmer)
     patch(0x3872,'47fa2bc8cb7fc8',jp(S['H_SGB'])+bytes(4))   # SGB packet sender -> queue packet for the colour engine
+    # Mario's eye pixel is drawn with the hat colour in several head tiles (data/mario_eye.json from tools/marioeye.py): make it an outline pixel
+    orig=open(orig,'rb').read() if isinstance(orig,str) else orig
+    for th,row,col in json.load(open(os.path.join(ROOT,'data','mario_eye.json'))):
+        tile=bytes.fromhex(th); m=0x80>>col; n=0; i=orig.find(tile)
+        while i>=0:
+            lo,hi=rom[i+2*row],rom[i+2*row+1]
+            if 0x10000<=i<0x14000 and lo&m and hi&m: rom[i+2*row+1]=hi&~m; n+=1
+            i=orig.find(tile,i+1)
+        print('mario eye tile %s row %d col %d: %d copies'%(th[:8],row,col,n))
     rom[0x143]=0x80                                          # CGB-compatible
     c=0
     for i in range(0x134,0x14d): c=(c-rom[i]-1)&0xff
