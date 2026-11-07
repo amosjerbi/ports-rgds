@@ -19,6 +19,32 @@ for k in d.files:
     elif sx==0:
         m=[[tc[tm[r][c]] for c in range(20)] for r in range(32)]
         out[i]={'kind':'V','map':m}
+# ---- Big-City (world 1): reuse the hand-made 1-1 / 1-2 look: tile -> palette learned from those two stages, nearest-tile fallback
+o12=json.load(open('data/ovr12.json')); o19=json.load(open('data/ovr19.json'))
+known={}    # tile graphics -> list of palettes
+def feat(t): return np.array([t.mean()/3,(t==3).mean(),(t==0).mean(),(t==1).mean(),(t==2).mean()])
+def learn(step,mp,rows):
+    tm=d['tm%d'%step]; tl=d['tl%d'%step]
+    for r in range(rows):
+        for c in range(20):
+            if r==0 and step==16: continue
+            known.setdefault(tl[tm[r][c]].tobytes(),[]).append(mp[r][c])
+learn(16,o12['map'],18); learn(19,o19['map'],32)
+kt=[(np.frombuffer(k,np.uint8).reshape(8,8),max(set(v),key=v.count)) for k,v in known.items()]
+kf=np.array([feat(t) for t,_ in kt]); kp=[p for _,p in kt]
+cache={}
+def pal_for(t):
+    k=t.tobytes()
+    if k in known: return max(set(known[k]),key=known[k].count)
+    if k not in cache: cache[k]=kp[int(((kf-feat(t))**2).sum(1).argmin())]
+    return cache[k]
+for i,v in out.items():
+    if not (13<=i<39) or i in (16,19): continue
+    tm=d['tm%d'%i]; tl=d['tl%d'%i]
+    if v['kind']=='S':
+        v['map']=[[pal_for(tl[tm[r][c]]) for c in range(20)] for r in range(18)]; v['map'][0]=[7]*20
+    else: v['map']=[[pal_for(tl[tm[r][c]]) for c in range(20)] for r in range(32)]
+    print('world1 stage',i,v['kind'])
 json.dump(out,open('out/stagemaps.json','w'))
 from collections import Counter
 print(Counter(v['kind'] for v in out.values()))

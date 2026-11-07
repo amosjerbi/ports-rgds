@@ -19,7 +19,7 @@ plain DMG or a real SGB the game's original code path still runs.
 * Apply to **your own** copy of the original ROM
   (SHA-1 `6ed661bd1d6d8cdd48e1c10f8ca4e8dcba49128e`, 512 KB, *Donkey Kong (Japan, USA) (En) (SGB Enhanced)*).
 * `python3 apply_patch.py original.gb dk-color.ips dk-color.gb` (or any IPS patcher, e.g. Flips).
-  The patched ROM has SHA-1 `5695ec51f6f74895de69e05a0a20f82237274b81`.
+  The patched ROM has SHA-1 `3c36c9d6e0287fe046e5999baff6ef1bcb5dc3fc`.
 * Run it in a CGB-capable emulator (SameBoy, mGBA, BGB, Gambatte) or on a Game Boy Color.
 * **No ROM is included in this repository.** Only the patch (my own code and colour data) and the build sources.
 
@@ -38,7 +38,7 @@ plain DMG or a real SGB the game's original code path still runs.
   sky, decor (foliage / ice / clouds), structure (girders, bricks, rock), dense blocks and ink each get their own palette,
   like the hand-made Big-City look. Static stages (47) get a 20x18 map and vertically scrolling stages (35) a 20x32 map,
   classified from the tile graphics (`tools/stagecap.py`, `tools/stagemaps.py` -> `data/stagemaps.json`, stored in free
-  ROM space). The 19 horizontally scrolling stages still use one flat palette per world.
+  ROM space). Big-City 1-3..1-8 reuse the exact 1-1 / 1-2 palettes, with tiles coloured like their 1-1 / 1-2 counterparts (nearest-tile match for new tiles). The 19 horizontally scrolling stages still use one flat palette per world.
 * Donkey Kong is brown and beige in the classic stages 2, 3 and 4 (his tiles differ per stage).
 
 ## All worlds

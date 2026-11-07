@@ -20,5 +20,6 @@ for w,(name,sky,dec,st,dn,ink) in W.items():
     p2=[mix(sky,st,.3),mix(sky,st,.65),st,ink]
     p3=[mix(st,dn,.3),mix(st,dn,.7),dn,ink]
     bg=[p0,p1,p2,p3,p1,p2,p3,ov['bg'][7]]
+    if w==1: bg=ov['bg']       # Big-City: exactly the 1-1 / 1-2 palettes
     out.append({'world':w,'name':name,'bg':[[list(map(float,c)) for c in p] for p in bg],'obj':ov['obj']})
-json.dump({'themes':out,'cls':ov['cls']},open('data/themes.json','w')); print('saved out/themes.json')
+json.dump({'themes':out,'cls':ov['cls']},open('out/themes.json','w')); print('saved out/themes.json')
