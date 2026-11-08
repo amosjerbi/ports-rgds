@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <dirent.h>
+#include <strings.h>
 #include <fat.h>
 #include "../engine/resource.h"
 #include "../engine/gfx.h"
@@ -37,6 +39,40 @@ static volatile uint32_t vbl_ticks;
 static int16_t mouse_x = 160, mouse_y = 100;
 
 static void vblank_handler(void) { vbl_ticks++; }
+
+#ifdef PERF
+/* Profile build: timers 2+3 cascade = 32-bit counter at 33.5 MHz. */
+static u32 perf_now(void)
+{
+    u16 hi, lo;
+    do { hi = REG_TMxCNT_L(3); lo = REG_TMxCNT_L(2); } while (hi != REG_TMxCNT_L(3));
+    return (u32)hi << 16 | lo;
+}
+static u32 perf_music, perf_present, perf_sleep, perf_frames, perf_start;
+static void perf_init(void)
+{
+    REG_TMxCNT_H(2) = 0; REG_TMxCNT_H(3) = 0; REG_TMxCNT_L(2) = 0; REG_TMxCNT_L(3) = 0;
+    REG_TMxCNT_H(3) = TIMER_CASCADE | TIMER_ENABLE; REG_TMxCNT_H(2) = TIMER_ENABLE;
+    perf_start = perf_now();
+}
+static void perf_report(void)
+{
+    u32 tot = perf_now() - perf_start;
+    if (tot < 33513982u * 5) return;                     /* every 5 s */
+    extern uint32_t kperf_waits, kperf_wait_arg;
+    vm_log("w%lu/%lu ", (unsigned long)kperf_waits, (unsigned long)kperf_wait_arg); kperf_waits = 0;
+    vm_log("t%lu fr %lu mus %lu%% pres %lu%% sleep %lu%%\n", (unsigned long)vbl_ticks, (unsigned long)perf_frames,
+           (unsigned long)(perf_music / (tot / 100)), (unsigned long)(perf_present / (tot / 100)),
+           (unsigned long)(perf_sleep / (tot / 100)));
+    perf_music = perf_present = perf_sleep = perf_frames = 0;
+    perf_start = perf_now();
+}
+#define PERF_BEGIN() u32 perf_t = perf_now()
+#define PERF_END(acc) ((acc) += perf_now() - perf_t)
+#else
+#define PERF_BEGIN() ((void)0)
+#define PERF_END(acc) ((void)0)
+#endif
 
 /* ------------------------------------------------------------- log */
 
@@ -63,6 +99,7 @@ uint32_t plat_ticks(void) { return vbl_ticks; }
 static volatile int ap_peak, ap_count;
 #endif
 static int top_status;   /* top screen shows the life-goals panel */
+static void present_flush(void);
 
 /* Top screen stays dark until a game is under way (then: life goals). */
 static void top_screen_off(void)
@@ -76,19 +113,47 @@ static void top_screen_off(void)
 void plat_sleep_ticks(int n)
 {
     if (n <= 0) return;
+    PERF_BEGIN();
     uint32_t until = vbl_ticks + (uint32_t)n;
     while ((int32_t)(until - vbl_ticks) > 0) {
         if (!pmMainLoop()) { vm.quit = 1; return; }
         threadWaitForVBlank();
+        present_flush();
     }
+    PERF_END(perf_sleep);
 }
 
 /* ------------------------------------------------------------- video */
 
 static uint8_t status_buf[TOPSTATUS_W * TOPSTATUS_H] __attribute__((aligned(32)));
 
+/* The game can present far more often than the 60 Hz display (the profile
+ * build measured ~147 per second, ~46% of the CPU). Copy at most one frame
+ * per vblank; a later present in the same frame is sent at the next one. */
+static uint32_t present_tick = 0xffffffff;
+static int present_pending;
+static void present_now(void);
+
 void plat_present(void)
 {
+    if (vbl_ticks == present_tick) { present_pending = 1; return; }
+    present_now();
+}
+
+static void present_flush(void)
+{
+    if (present_pending && vbl_ticks != present_tick) present_now();
+}
+
+static void present_now(void)
+{
+    present_tick = vbl_ticks;
+    present_pending = 0;
+#ifdef PERF
+    perf_frames++;
+    perf_report();
+#endif
+    PERF_BEGIN();
     int st = topstatus_update(status_buf, vbl_ticks);
     if (st && !top_status) {                 /* switch top screen to the panel */
         top_status = 1;
@@ -129,6 +194,7 @@ void plat_present(void)
     }
     for (int y = 0; y < SCREEN_H; y++)
         dmaCopy(src + y * SCREEN_W, b + y * 256, SCREEN_W);
+    PERF_END(perf_present);
 }
 
 void plat_set_cursor(const uint8_t *c, int type, int loop, int cel, int visible)
@@ -181,6 +247,7 @@ int plat_poll_event(PlatEvent *ev)
     if (vbl_ticks != last_scan) {
         last_scan = vbl_ticks;
         poll_input();
+        present_flush();
     }
 #ifdef AUTOPLAY
     {   /* test build: scripted taps (tick, x, y in game coordinates) */
@@ -255,6 +322,7 @@ static int music_main(void *arg)
             u32 pos = audio_written & (RING - 1);
             u32 n = RING - pos;
             if (n > played + AHEAD - audio_written) n = played + AHEAD - audio_written;
+            PERF_BEGIN();
             mutexLock(&audio_mutex);
             music_render(ring + pos, (int)n);
             voice_mix(ring + pos, (int)n, AUDIO_RATE);
@@ -263,6 +331,7 @@ static int music_main(void *arg)
               if (voice_position() > 0) for (u32 i = 0; i < n; i++) { int v = ring[pos + i] < 0 ? -ring[pos + i] : ring[pos + i]; if (v > ap_peak) ap_peak = v; ap_count++; } }
 #endif
             mutexUnlock(&audio_mutex);
+            PERF_END(perf_music);
             DC_FlushRange(ring + pos, n * 2);
             audio_written += n;
         }
@@ -329,6 +398,13 @@ void plat_sound(int cmd, int a, int b, int c)
     mutexUnlock(&audio_mutex);
 }
 
+/* BOOTDIAG builds: the bottom backdrop colour shows how far startup got. */
+#ifdef BOOTDIAG
+#define DIAG(r,g,b) (BG_PALETTE_SUB[0] = RGB15(r,g,b))
+#else
+#define DIAG(r,g,b) ((void)0)
+#endif
+
 /* ------------------------------------------------------------- speech */
 /* CD build: audio001.map / audio001.002 live in the ROM's NitroFS. */
 
@@ -381,11 +457,68 @@ static int nitro_read(void *user, uint32_t off, void *buf, uint32_t n)
     return nitroromReadFile(nitro, (u16)cd_volume, off, buf, n);
 }
 
+/* Fallback when calico can't find its own ROM (no argv[0] and no readable
+ * card, e.g. DraStic): look for a .nds on the SD card whose header matches
+ * the one the loader left in memory, and read NitroFS from that file. */
+static NitroRom nitro_file;
+static FILE *nitro_fp;
+
+static bool fp_read(void *user, u32 off, void *buf, u32 size)
+{
+    FILE *f = user;
+    return fseek(f, (long)off, SEEK_SET) == 0 && fread(buf, 1, size, f) == size;
+}
+static void fp_close(void *user) { fclose(user); }
+static const NitroRomIface fp_iface = { fp_read, fp_close };
+
+static NitroRom *nitro_find_self(void)
+{
+    static const char *dirs[] = { "/", "/roms/nds/", "/nds/", NULL };
+    const EnvNdsHeader *me = g_envAppNdsHeader;
+    char path[300];
+    for (int d = 0; dirs[d]; d++) {
+        DIR *dp = opendir(dirs[d]);
+        if (!dp) continue;
+        struct dirent *e;
+        while ((e = readdir(dp))) {
+            size_t n = strlen(e->d_name);
+            if (n < 5 || strcasecmp(e->d_name + n - 4, ".nds")) continue;
+            snprintf(path, sizeof path, "%s%s", dirs[d], e->d_name);
+            FILE *f = fopen(path, "rb");
+            if (!f) continue;
+            EnvNdsHeader h;
+            if (fread(&h, 1, sizeof h, f) == sizeof h &&
+                !memcmp(h.title, me->title, sizeof h.title) &&
+                h.fat_rom_offset == me->fat_rom_offset && h.fnt_rom_offset == me->fnt_rom_offset &&
+                h.arm9_size == me->arm9_size && h.header_crc16 == me->header_crc16) {
+                NitroRomParams p = { me->fat_rom_offset, me->fat_size, me->fnt_rom_offset, me->fnt_size, 0 };
+                if (nitroromOpen(&nitro_file, &p, &fp_iface, f)) {
+                    closedir(dp);
+                    nitro_fp = f;
+                    vm_log("NitroFS: %s\n", path);
+                    return &nitro_file;
+                }
+            }
+            fclose(f);
+        }
+        closedir(dp);
+    }
+    return NULL;
+}
+
 /* The CD build keeps resource.001 and the speech files in NitroFS. */
 static int nitro_init(void)
 {
-    fat_ready();                       /* nitroromGetSelf may open argv[0] via stdio */
+    /* Card reads first: mounting the SD card can be slow or, with a broken
+     * emulator SD image, hang, and the game must still boot without it. */
+    DIAG(31,0,0);
     nitro = nitroromGetSelf();
+    DIAG(31,31,0);
+    if (!nitro && fat_ready()) {       /* nitroromGetSelf may open argv[0] via stdio */
+        nitro = nitroromGetSelf();
+        if (!nitro) nitro = nitro_find_self();
+    }
+    DIAG(0,31,0);
     if (!nitro) { vm_log("NitroFS not found: can't read game data\n"); return 0; }
     cd_volume = nitroromResolvePath(nitro, NITROROM_ROOT_DIR, "resource.001");
     if (cd_volume < 0) { vm_log("resource.001 missing from NitroFS\n"); return 0; }
@@ -419,7 +552,6 @@ static int fat_ready(void)
 {
     if (!fat_state) {
         fat_state = fatInitDefault() ? 1 : -1;
-        if (fat_state > 0) { mkdir("/data", 0777); mkdir("/data/jones", 0777); }
         vm_log("storage: %s\n", fat_state > 0 ? "SD card" : "none (saving disabled)");
     }
     return fat_state > 0;
@@ -433,6 +565,8 @@ static void save_path(char *buf, size_t n, int slot)
 int plat_save(int slot, const void *data, uint32_t size)
 {
     if (!fat_ready()) return 0;
+    mkdir("/data", 0777);
+    mkdir("/data/jones", 0777);
     char path[64], tmp[72];
     save_path(path, sizeof path, slot);
     snprintf(tmp, sizeof tmp, "%s.tmp", path);
@@ -475,11 +609,14 @@ static int engine_main(void *arg)
 #endif
     res_init(res_map_data, (uint32_t)(res_map_end - res_map_data), vols, (int)(sizeof vols / sizeof *vols));
     res_set_cache_budget(1024 * 1024);
+    DIAG(0,31,31);
     gfx_init();
     audio_init();
+    DIAG(0,0,31);
 #ifdef CDROM
     speech_init();
 #endif
+    DIAG(31,0,31);
 #ifdef VOICETEST
     {
         static uint8_t raw[64];
@@ -520,6 +657,7 @@ static int engine_main(void *arg)
     }
 #endif
     if (vm_init() < 0) return 1;
+    DIAG(31,31,31);
     vm_run_game();
     return 0;
 }
@@ -536,6 +674,9 @@ int main(void)
     bgSetScale(bg_bot, (320 << 8) / 256, (200 << 8) / 192);
     top_screen_off();
     bgUpdate();
+#ifdef PERF
+    perf_init();
+#endif
     irqSet(IRQ_VBLANK, vblank_handler);
     irqEnable(IRQ_VBLANK);
 

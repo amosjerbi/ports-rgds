@@ -35,12 +35,16 @@ needs both copies.
 - **The DS libraries come with this project** in `toolchain/dkp`, prebuilt for
   ARM so they work on any host OS:
   - libnds 2.0 (`84e6082`)
-  - calico (`81b75e3`), with its `ds7_ragdoll` ARM7 binary
+  - calico (`81b75e3`) with `toolchain/patches/calico-emulators.patch`, plus
+    its `ds7_ragdoll` ARM7 binary. The patch keeps the ARM9 exception vectors
+    high and routes IRQs through the BIOS, so emulators with an HLE BIOS
+    (DraStic) don't crash on boot. It also lets NitroFS fall back to card reads
+    when the loader leaves no ROM path.
   - libfat (`154f782`), with `toolchain/patches/libfat-calico.patch`, which
     connects it to calico's SD card driver
 
   Their licences are next to them. `toolchain/build_calico.sh` rebuilds calico
-  from source. You can also use your devkitPro's own libraries instead; see
+  from source (apply the patch to a calico checkout first). You can also use your devkitPro's own libraries instead; see
   [Using a stock devkitPro](#using-a-stock-devkitpro).
 - **Your copy of the game** (see below).
 
@@ -129,7 +133,36 @@ To start over: `make clean`.
   launch it like any homebrew ROM.
 
 Save games go to `/data/jones/jonesN.sav` on the SD card (L = save, R = restore).
-In an emulator, enable DLDI/SD card emulation or saving won't work.
+In an emulator, enable DLDI/SD card emulation or saving won't work. The game
+boots without an SD card; only saving is disabled.
+
+### Anbernic RG DS (ROCKNIX)
+
+Use **DSperate**. It's ROCKNIX's melonDS-based DS emulator, and it puts each DS
+screen on its own physical panel:
+
+1. Copy `jones-cdrom.nds` (or `jones.nds`) to `/storage/roms/nds`.
+2. In EmulationStation, open the game's options and set the emulator to
+   **dsperate**, then turn **auto save/load off**. With auto-resume on,
+   DSperate restores the last snapshot instead of booting the game, and a
+   snapshot taken with a different build of the ROM freezes it.
+
+   Or set it over SSH, in `/storage/.config/system/configs/system.cfg`:
+
+   ```
+   nds["jones-cdrom.nds"].emulator=dsperate
+   nds["jones-cdrom.nds"].core=dsperate-sa
+   nds["jones-cdrom.nds"].autosave=0
+   ```
+
+Known limits on ROCKNIX:
+
+- **Saving:** DSperate gives DS homebrew no SD card, so L/R saves don't work.
+  Don't use DSperate's save states across ROM updates either.
+- **RetroArch melonDS DS** draws both screens on one panel. With its JIT on,
+  calico homebrew hangs, and with the JIT off it runs at about 18 fps.
+- **DraStic** runs calico ROMs only with the patch above, and still can't read
+  NitroFS, so the CD build doesn't start there.
 
 ---
 

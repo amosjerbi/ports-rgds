@@ -46,6 +46,8 @@ game; see **[BUILDING.md](BUILDING.md)**.
   graphics.
 - **Save / restore:** L = save, R = restore. Saves go to `/data/jones/` on the
   SD card.
+- **RG DS:** runs in ROCKNIX's DSperate emulator with one DS screen per panel.
+  See [BUILDING.md](BUILDING.md#anbernic-rg-ds-rocknix).
 
 ## How it works
 

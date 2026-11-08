@@ -1,0 +1,82 @@
+diff --git a/source/nds/arm9/bootstub_arm9.s b/source/nds/arm9/bootstub_arm9.s
+index 5ffdb87..a73aecc 100644
+--- a/source/nds/arm9/bootstub_arm9.s
++++ b/source/nds/arm9/bootstub_arm9.s
+@@ -89,6 +89,11 @@ FUNC_START32 __ds9_bootstub, bootstub
+ 	@ Set up supervisor mode stack
+ 	ldr  sp, =__sp_svc
+ 
++	@ BIOS IRQ handler pointer (DTCM+0x3FFC) -> __arm_bios_irq
++	ldr  r0, =__irq_vector
++	ldr  r1, =__arm_bios_irq
++	str  r1, [r0]
++
+ 	@ Disable interrupts in the IRQ controller
+ 	mov  r11, #MM_IO
+ 	strb r11, [r11, #IO_IME]
+diff --git a/source/nds/arm9/mpu_setup.crt0.s b/source/nds/arm9/mpu_setup.crt0.s
+index 0996181..3221051 100644
+--- a/source/nds/arm9/mpu_setup.crt0.s
++++ b/source/nds/arm9/mpu_setup.crt0.s
+@@ -42,7 +42,7 @@ FUNC_START32 crt0SetupMPU
+ 	mrc   p15, 0, r3, c1, c0, 0
+ 	ldr   r2, =(CP15_CR_PU_ENABLE | CP15_CR_DCACHE_ENABLE | CP15_CR_ICACHE_ENABLE | CP15_CR_ROUND_ROBIN)
+ 	orr   r3, r3, r2
+-	bic   r3, r3, #CP15_CR_ALT_VECTORS
++	@ keep CP15_CR_ALT_VECTORS: IRQs enter through the BIOS (see __arm_bios_irq)
+ 	mcr   p15, 0, r3, c1, c0, 0
+ 
+ 	pop   {r4-r11}
+diff --git a/source/nds/arm9/nitrorom.c b/source/nds/arm9/nitrorom.c
+index 93b49ab..16999b3 100644
+--- a/source/nds/arm9/nitrorom.c
++++ b/source/nds/arm9/nitrorom.c
+@@ -98,8 +98,9 @@ NitroRom* nitroromGetSelf(void)
+ 		}
+ 	}
+ 
+-	// If above failed and we're booted from a real NDS card (e.g. emulators), try direct card access
+-	if (!ok && !argv0 && g_envBootParam->boot_src == EnvBootSrc_Card) {
++	// If above failed, try direct card access. Emulators boot from a real NDS card image; some
++	// (DraStic) also pass an argv[0] on an SD card that the program cannot mount.
++	if (!ok) {
+ 		ok = ntrcardOpen();
+ 		if (ok) {
+ 			ok = nitroromOpen(&s_nitroromSelf, &params, &s_nitroromCardIface, (void*)(int)g_nitroromCardDmaChannel);
+diff --git a/source/nds/irq_handler.32.s b/source/nds/irq_handler.32.s
+index 03c2a4a..7a0384c 100644
+--- a/source/nds/irq_handler.32.s
++++ b/source/nds/irq_handler.32.s
+@@ -7,6 +7,15 @@
+ 
+ #if defined(ARM9)
+ 
++@ Entry from the BIOS IRQ vector (0xFFFF0018), which pushed {r0-r3,r12,lr}
++@ and jumped here through __irq_vector (DTCM+0x3FFC). Undo that frame and
++@ continue as if entered directly from the exception vector. Exceptions are
++@ routed through the BIOS so emulators with an HLE BIOS (DraStic) work.
++FUNC_START32 __arm_bios_irq
++	ldmia sp!, {r0-r3,r12,lr}
++	b     __arm_excpt_irq
++FUNC_END
++
+ FUNC_START32 __arm_excpt_irq
+ 
+ 	sub   lr, lr, #4
+diff --git a/source/nds/ntrcard.c b/source/nds/ntrcard.c
+index fd727ee..d5ed488 100644
+--- a/source/nds/ntrcard.c
++++ b/source/nds/ntrcard.c
+@@ -111,9 +111,10 @@ static bool _ntrcardOpen(void)
+ 	if (!s_ntrcardState.first_init) {
+ 		s_ntrcardState.first_init = true;
+ 
+-		if (g_envBootParam->boot_src == EnvBootSrc_Card) {
++		if (g_envBootParam->boot_src == EnvBootSrc_Card || g_envBootParam->boot_src == EnvBootSrc_Unknown) {
+ 			// If we are booted from Slot-1, assume the card is in Main mode
+-			// (this is true for both flashcards and emulators)
++			// (this is true for both flashcards and emulators). Some emulators
++			// (DraStic) boot from a card image without setting boot_src.
+ 			s_ntrcardState.mode = NtrCardMode_Main;
+ 			s_ntrcardState.romcnt = g_envAppNdsHeader->cardcnt_normal;
+ 			s_ntrcardState.romcnt &= ~NTRCARD_ROMCNT_BLK_SIZE(7);

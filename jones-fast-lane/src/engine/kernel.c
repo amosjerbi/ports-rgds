@@ -264,6 +264,7 @@ static reg_t menu_select(reg_t ev)
 
 /* ---------------------------------------------------------------- dispatch */
 
+uint32_t kperf_waits, kperf_wait_arg, kperf_animates;   /* profiling counters */
 static reg_t kernel_call_inner(int num, int argc, uint16_t argv);
 reg_t kernel_call(int num, int argc, uint16_t argv)
 {
@@ -424,6 +425,7 @@ static reg_t kernel_call_inner(int num, int argc, uint16_t argv)
     case 0x41: {                                      /* Wait */
         static uint32_t last;
         int ticks = ARG(0);
+        kperf_waits++; kperf_wait_arg = (uint32_t)ticks;
         uint32_t now = plat_ticks();
         if (ticks > 0 && now - last < (uint32_t)ticks)
             plat_sleep_ticks(ticks - (int)(now - last));
