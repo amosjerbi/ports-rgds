@@ -295,7 +295,9 @@ static reg_t kernel_call_inner(int num, int argc, uint16_t argv)
     case 0x75: { extern reg_t kdoaudio_call(int, uint16_t); return kdoaudio_call(argc, argv); }
     case 0x76: { extern reg_t kdosync_call(int, uint16_t); return kdosync_call(argc, argv); }
     case 0x00: return ARG(1);                         /* Load */
-    case 0x01: return 0;                              /* UnLoad */
+    case 0x01:                                        /* UnLoad */
+        if ((ARG(0) & 0x7f) == 5 && argc > 1) kgfx_free_bits(ARG(1));   /* memory */
+        return 0;
     case 0x02: return script_export(ARG(0), argc > 1 ? ARG(1) : 0);
     case 0x03:                                        /* DisposeScript */
         if (ARG(0) != 0 && npending < 16) pending_dispose[npending++] = ARG(0);

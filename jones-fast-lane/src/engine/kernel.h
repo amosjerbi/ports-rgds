@@ -14,6 +14,7 @@ int   script_number_of(uint16_t addr);
 /* implemented in kgraphics.c */
 reg_t kgfx_call(int num, int argc, uint16_t argv, int *handled);
 void  kgfx_init(void);
+void  kgfx_free_bits(uint16_t handle);
 /* implemented in ksave.c */
 reg_t ksave_call(int num, int argc, uint16_t argv, int *handled);
 void  kernel_flush_disposals(void);

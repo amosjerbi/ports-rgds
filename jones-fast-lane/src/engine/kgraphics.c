@@ -140,10 +140,17 @@ static uint16_t bits_save_screen(Rect r, int mask)
     if (rect_empty(&r)) return 0;
     int w = r.right - r.left, h = r.bottom - r.top, planes = 0;
     for (int m = 1; m <= 4; m <<= 1) if (mask & m) planes++;
-    for (int i = 1; i < MAX_BITS; i++) {
+    /* Rotate through the slots instead of always taking the lowest free
+     * one, so a stale handle (restored, then UnLoaded by the script) is
+     * unlikely to name a newer save. */
+    static int next = 1;
+    for (int k = 1; k < MAX_BITS; k++) {
+        int i = next;
+        next = next + 1 < MAX_BITS ? next + 1 : 1;
         if (bits[i].used) continue;
         uint8_t *d = malloc((size_t)w * h * planes);
-        if (!d) return 0;
+        if (!d) { res_purge(); d = malloc((size_t)w * h * planes); }   /* DS: tight RAM */
+        if (!d) { vm_log("saved bits: out of memory (%dx%d)\n", w, h); return 0; }
         uint8_t *o = d;
         for (int m = 1; m <= 4; m <<= 1) {
             if (!(mask & m)) continue;
@@ -183,6 +190,12 @@ static void bits_free(uint16_t h)
     free(b->data);
     b->used = 0;
 }
+
+/* UnLoad(RES_MEMORY | 0x80, handle): the scripts drop saved bits they no
+ * longer need this way. Without it every such save leaked a slot until all
+ * of them were taken, and then nothing was restored (the sliding notice
+ * left trails). */
+void kgfx_free_bits(uint16_t h) { bits_free(h); }
 
 static void bits_restore(uint16_t h)
 {
