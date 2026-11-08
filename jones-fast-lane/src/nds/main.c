@@ -318,10 +318,16 @@ static int music_main(void *arg)
         threadWaitForVBlank();
         u32 played = audio_played();
         if (audio_written < played) audio_written = played;   /* fell behind: skip */
-        while (audio_written < played + AHEAD) {
+        /* Render at most ~1.5 frames of audio per wake-up. This thread outranks
+         * the engine, so if the synth can't keep up (slow emulator) an
+         * unbounded loop would starve the game forever; this way the sound
+         * drops out but the game keeps running. */
+        u32 budget = audio_written + AUDIO_RATE / 40;
+        while (audio_written < played + AHEAD && audio_written < budget) {
             u32 pos = audio_written & (RING - 1);
             u32 n = RING - pos;
             if (n > played + AHEAD - audio_written) n = played + AHEAD - audio_written;
+            if (n > budget - audio_written) n = budget - audio_written;
             PERF_BEGIN();
             mutexLock(&audio_mutex);
             music_render(ring + pos, (int)n);
@@ -361,7 +367,9 @@ static void audio_init(void)
     REG_TMxCNT_H(0) = TIMER_ENABLE;          /* prescaler 1 */
     audio_written = AHEAD / 2;
     threadPrepare(&music_thread, music_main, NULL, &music_stack[sizeof music_stack], MAIN_THREAD_PRIO);
+#ifndef NOMUSICTHREAD
     threadStart(&music_thread);
+#endif
     audio_ok = 1;
 }
 
@@ -401,8 +409,10 @@ void plat_sound(int cmd, int a, int b, int c)
 /* BOOTDIAG builds: the bottom backdrop colour shows how far startup got. */
 #ifdef BOOTDIAG
 #define DIAG(r,g,b) (BG_PALETTE_SUB[0] = RGB15(r,g,b))
+#define DIAGW(r,g,b) do { for (int _i = 0; _i < 5; _i++) threadWaitForVBlank(); DIAG(r,g,b); } while (0)
 #else
 #define DIAG(r,g,b) ((void)0)
+#define DIAGW(r,g,b) ((void)0)
 #endif
 
 /* ------------------------------------------------------------- speech */
@@ -511,14 +521,15 @@ static int nitro_init(void)
 {
     /* Card reads first: mounting the SD card can be slow or, with a broken
      * emulator SD image, hang, and the game must still boot without it. */
-    DIAG(31,0,0);
+    DIAG(8,0,8);
+    DIAGW(31,0,0);                     /* a vblank wait wakes this thread */
     nitro = nitroromGetSelf();
-    DIAG(31,31,0);
+    DIAGW(31,31,0);
     if (!nitro && fat_ready()) {       /* nitroromGetSelf may open argv[0] via stdio */
         nitro = nitroromGetSelf();
         if (!nitro) nitro = nitro_find_self();
     }
-    DIAG(0,31,0);
+    DIAGW(0,31,0);
     if (!nitro) { vm_log("NitroFS not found: can't read game data\n"); return 0; }
     cd_volume = nitroromResolvePath(nitro, NITROROM_ROOT_DIR, "resource.001");
     if (cd_volume < 0) { vm_log("resource.001 missing from NitroFS\n"); return 0; }
@@ -592,6 +603,14 @@ int plat_load(int slot, void *data, uint32_t maxsize)
 
 /* ------------------------------------------------------------- main */
 
+#ifdef SPINIDLE
+/* Keeps calico's idle thread (which halts the CPU with CP15 wait-for-interrupt)
+ * from ever running. Test for emulators that don't wake from that halt. */
+static Thread spin_thread;
+static u8 spin_stack[512] __attribute__((aligned(8)));
+static int spin_main(void *arg) { (void)arg; for (;;) __asm__ volatile("" ::: "memory"); return 0; }
+#endif
+
 static Thread engine_thread;
 static u8 engine_stack[128 * 1024] __attribute__((aligned(8)));
 
@@ -609,14 +628,14 @@ static int engine_main(void *arg)
 #endif
     res_init(res_map_data, (uint32_t)(res_map_end - res_map_data), vols, (int)(sizeof vols / sizeof *vols));
     res_set_cache_budget(1024 * 1024);
-    DIAG(0,31,31);
+    DIAGW(0,31,31);
     gfx_init();
     audio_init();
-    DIAG(0,0,31);
+    DIAGW(0,0,31);
 #ifdef CDROM
     speech_init();
 #endif
-    DIAG(31,0,31);
+    DIAGW(31,0,31);
 #ifdef VOICETEST
     {
         static uint8_t raw[64];
@@ -637,13 +656,22 @@ static int engine_main(void *arg)
 #ifdef AUDIOTEST
     {
         vm_log("audio_ok %d period %u\n", audio_ok, audio_period);
+        DIAG(0,12,0);                                           /* dark green: before song */
+        u32 c0 = audio_played();
+        for (int i = 0; i < 30; i++) { threadWaitForVBlank(); DIAG(31 - i, 0, i); }   /* red->blue: frames pass */
+        if (audio_played() == c0) { DIAG(31,16,0); for (;;) threadWaitForVBlank(); }  /* orange: clock stuck (silence) */
+        DIAG(0,0,16);                                           /* dark blue: clock ok, starting song */
         plat_sound(8, 6, 1, 127);
+        DIAG(16,0,0);                                           /* dark red: song started */
         u32 p0 = audio_played();
         for (int i = 0; i < 120; i++) threadWaitForVBlank();
         int peak = 0;
         for (int i = 0; i < RING; i++) { int v = ring[i] < 0 ? -ring[i] : ring[i]; if (v > peak) peak = v; }
         vm_log("played %lu->%lu written %lu\n", (unsigned long)p0, (unsigned long)audio_played(), (unsigned long)audio_written);
         vm_log("active ch %x peak %d\n", soundGetActiveChannels(), peak);
+        if (audio_played() == p0) DIAG(31,16,0);                /* orange: play clock stuck */
+        else if (!peak) DIAG(16,16,16);                         /* grey: clock ok, ring silent */
+        else DIAG(0,31,0);                                      /* green: audio running */
         return 8;
     }
 #endif
@@ -680,12 +708,17 @@ int main(void)
     irqSet(IRQ_VBLANK, vblank_handler);
     irqEnable(IRQ_VBLANK);
 
+#ifdef SPINIDLE
+    threadPrepare(&spin_thread, spin_main, NULL, &spin_stack[sizeof spin_stack], THREAD_MIN_PRIO);
+    threadStart(&spin_thread);
+#endif
     threadPrepare(&engine_thread, engine_main, NULL, &engine_stack[sizeof engine_stack], MAIN_THREAD_PRIO + 1);
     threadAttachLocalStorage(&engine_thread, NULL);
     threadStart(&engine_thread);
     int rc = threadJoin(&engine_thread);
 
     /* game ended: show log on the top screen */
+    powerOn(PM_BACKLIGHT_TOP);
     videoSetMode(MODE_0_2D);
     vramSetBankA(VRAM_A_MAIN_BG);
     consoleInit(NULL, 0, BgType_Text4bpp, BgSize_T_256x256, 31, 0, true, true);

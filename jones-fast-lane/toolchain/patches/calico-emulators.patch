@@ -44,7 +44,7 @@ index 93b49ab..16999b3 100644
  		if (ok) {
  			ok = nitroromOpen(&s_nitroromSelf, &params, &s_nitroromCardIface, (void*)(int)g_nitroromCardDmaChannel);
 diff --git a/source/nds/irq_handler.32.s b/source/nds/irq_handler.32.s
-index 03c2a4a..7a0384c 100644
+index 03c2a4a..a1b9beb 100644
 --- a/source/nds/irq_handler.32.s
 +++ b/source/nds/irq_handler.32.s
 @@ -7,6 +7,15 @@
@@ -63,6 +63,35 @@ index 03c2a4a..7a0384c 100644
  FUNC_START32 __arm_excpt_irq
  
  	sub   lr, lr, #4
+@@ -73,7 +82,8 @@ FUNC_START32 __irq_handler
+ #if defined(ARM7)
+ 	push  {r1, lr} @ save irq_id & BIOS return address
+ #elif defined(ARM9)
+-	mcr   p15, 0, r2, c13, c0, 1 @ save irq_mask abusing CP15 "Trace Process ID" to shave off stack usage
++	push  {r1, r2}           @ save irq_id & irq_mask on the stack (not in CP15 c13,c0,1, which
++	                         @ some emulators, e.g. DSperate, don't implement: no thread ever woke)
+ #endif
+ 	cmp   r3, #0
+ #if defined(ARM7)
+@@ -93,7 +103,7 @@ FUNC_START32 __irq_handler
+ 	bhs   .LcheckIrqWait2
+ 	mov   r3, r1, lsl r0     @ r3 <- cur_irq_mask
+ #elif defined(ARM9)
+-	mrc   p15, 0, r3, c13, c0, 1 @ r3 <- cur_irq_mask
++	ldr   r3, [sp, #4]       @ r3 <- cur_irq_mask
+ #endif
+ 	ldr   r2, =__sched_state
+ 	ldr   r1, [r2, #3*4]     @ r1 <- s_irqWaitMask
+@@ -119,9 +129,7 @@ FUNC_START32 __irq_handler
+ 	@ Check if we have a pending reschedule
+ 	ldr   r2, =__sched_state
+ .LcheckReschedule:
+-#if defined(ARM7)
+ 	add   sp, sp, #8
+-#endif
+ 	ldr   r0, [r2, #4] @ r0 <- s_deferredThread
+ 	cmp   r0, #0
+ #if defined(ARM7)
 diff --git a/source/nds/ntrcard.c b/source/nds/ntrcard.c
 index fd727ee..d5ed488 100644
 --- a/source/nds/ntrcard.c

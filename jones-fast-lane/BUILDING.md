@@ -38,8 +38,10 @@ needs both copies.
   - calico (`81b75e3`) with `toolchain/patches/calico-emulators.patch`, plus
     its `ds7_ragdoll` ARM7 binary. The patch keeps the ARM9 exception vectors
     high and routes IRQs through the BIOS, so emulators with an HLE BIOS
-    (DraStic) don't crash on boot. It also lets NitroFS fall back to card reads
-    when the loader leaves no ROM path.
+    (DraStic) don't crash on boot. It keeps the IRQ mask on the stack, not in
+    CP15 c13 (DSperate doesn't emulate that register, so no thread ever woke
+    from a vblank wait: no sound, and the game froze). It also lets NitroFS
+    fall back to card reads when the loader leaves no ROM path.
   - libfat (`154f782`), with `toolchain/patches/libfat-calico.patch`, which
     connects it to calico's SD card driver
 
