@@ -1,0 +1,23 @@
+# Game files: copyrighted, never commit them (see BUILDING.md)
+Jones-in-the-Fast-Lane_DOS_EN/
+Jones3x/
+*.zip
+resource.map
+resource.0*
+audio001.*
+
+# Build output (ROMs contain the game files, so don't publish them either)
+build/
+
+# Local tools and emulator
+melonDS.app/
+toolchain/build/
+.DS_Store
+# local-only toolchain pieces (symlinks into /opt/devkitpro, upstream checkouts)
+toolchain/src/
+toolchain/bin/
+toolchain/dkp/devkitARM
+toolchain/dkp/cmake
+toolchain/dkp/portlibs
+toolchain/dkp/tools
+decomp/

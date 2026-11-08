@@ -1,0 +1,75 @@
+diff --git a/source/disc.c b/source/disc.c
+index f923fd0..6c0eb4e 100755
+--- a/source/disc.c
++++ b/source/disc.c
+@@ -94,11 +94,14 @@ const INTERFACE_ID _FAT_disc_interfaces[] = {
+ #elif defined (NDS)
+ #include <nds/system.h>
+ #include <nds/memory.h>
+-#include <nds/arm9/dldi.h>
++#include <nds/disc_io.h>
++
++const DISC_INTERFACE *calico_dsisd_get(void);
++const DISC_INTERFACE *calico_dldi_get(void);
+ 
+ const INTERFACE_ID _FAT_disc_interfaces[] = {
+-	{"sd",  get_io_dsisd},
+-	{"fat", dldiGetInternal},
++	{"sd",  calico_dsisd_get},
++	{"fat", calico_dldi_get},
+ 	{NULL, NULL}
+ };	
+ 
+diff --git a/source/calico_disc.c b/source/calico_disc.c
+new file mode 100644
+index 0000000..2a11fd5
+--- /dev/null
++++ b/source/calico_disc.c
+@@ -0,0 +1,47 @@
++/* DISC_INTERFACE wrappers over calico's block device API (DLDI / DSi SD),
++ * replacing libnds 1.x's dldiGetInternal / get_io_dsisd. */
++#if defined(NDS)
++#include <string.h>
++#include <calico.h>
++#include <nds/disc_io.h>
++
++static u8 bounce[512 * 8] __attribute__((aligned(32)));
++
++static bool rd(BlkDevice dev, sec_t first, sec_t n, void *buf)
++{
++    if (((u32)buf & 31) == 0) return blkDevReadSectors(dev, buf, first, n);
++    while (n) {
++        sec_t c = n > 8 ? 8 : n;
++        if (!blkDevReadSectors(dev, bounce, first, c)) return false;
++        memcpy(buf, bounce, c * 512);
++        buf = (u8 *)buf + c * 512; first += c; n -= c;
++    }
++    return true;
++}
++
++static bool wr(BlkDevice dev, sec_t first, sec_t n, const void *buf)
++{
++    if (((u32)buf & 3) == 0) return blkDevWriteSectors(dev, buf, first, n);
++    while (n) {
++        sec_t c = n > 8 ? 8 : n;
++        memcpy(bounce, buf, c * 512);
++        if (!blkDevWriteSectors(dev, bounce, first, c)) return false;
++        buf = (const u8 *)buf + c * 512; first += c; n -= c;
++    }
++    return true;
++}
++
++#define DEV(name, dev, type)                                                          \
++    static bool name##_startup(void) { return blkDevInit(dev); }                     \
++    static bool name##_inserted(void) { return blkDevIsPresent(dev); }               \
++    static bool name##_read(sec_t f, sec_t n, void *b) { return rd(dev, f, n, b); }  \
++    static bool name##_write(sec_t f, sec_t n, const void *b) { return wr(dev, f, n, b); } \
++    static bool name##_ok(void) { return true; }                                     \
++    static const DISC_INTERFACE name##_iface = {                                     \
++        type, FEATURE_MEDIUM_CANREAD | FEATURE_MEDIUM_CANWRITE,                      \
++        name##_startup, name##_inserted, name##_read, name##_write, name##_ok, name##_ok }; \
++    const DISC_INTERFACE *name##_get(void) { return &name##_iface; }
++
++DEV(calico_dldi, BlkDevice_Dldi, 0x49444c44 /* 'DLDI' */)
++DEV(calico_dsisd, BlkDevice_TwlSdCard, 0x44534453 /* 'SDSD' */)
++#endif
