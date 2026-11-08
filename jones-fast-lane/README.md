@@ -21,6 +21,10 @@ game; see **[BUILDING.md](BUILDING.md)**.
 
 *QT Clothing, Monolith Burgers, the Pawn Shop and the Employment Office in the CD build (engine output at 320×200).*
 
+![Location panels](screens/location-panels.png)
+
+*Top screen inside Monolith Burgers and the Pawn Shop.*
+
 ## Two ROMs
 
 | ROM | From | Size | What you get |
@@ -35,6 +39,10 @@ game; see **[BUILDING.md](BUILDING.md)**.
 - **Top screen:** a *Life Goals* panel showing each player's cash and their
   wealth, happiness, education and career progress against their goals. It
   turns on once a game starts and stays dark before that.
+- **Location panel:** inside a store, the bank, the university or another
+  location, the top screen redraws it in the same style: the location's name,
+  your cash top right, its items with prices and its buttons. The d-pad picks
+  an entry and A selects it (taps still work on the bottom screen).
 - **Music:** a software FM synth for the game's AdLib tracks, using the 48
   instrument patches from `patch.003`, mixed at 22 kHz.
 - **Voices (CD):** raw 11 kHz speech clips, streamed from the ROM's file
@@ -58,7 +66,7 @@ game; see **[BUILDING.md](BUILDING.md)**.
 | Pics, views, fonts, SCI1 palette merge | `src/engine/gfx.c`, `kgraphics.c` |
 | Music synth, DoSound (early and late SCI1 numbering) | `src/engine/music.c`, `ksound.c` |
 | CD speech, lip sync, subtitles, balloons | `src/engine/voice.c`, `subtitle.c`, `balloon.c` |
-| Top-screen life goals | `src/engine/topstatus.c` |
+| Top-screen life goals and location panel | `src/engine/topstatus.c`, `locpanel.c` |
 | DS platform: video, touch, audio thread, NitroFS, saves | `src/nds/main.c` |
 | Subtitle table builder (floppy text → CD clip numbers) | `tools/textdump.c`, `tools/mksubs.py` |
 | Headless test runner (renders frames, WAV, traces) | `tools/scirun.c` |

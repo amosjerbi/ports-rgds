@@ -26,6 +26,7 @@
 #include "../engine/voice.h"
 #include "../engine/subtitle.h"
 #include "../engine/balloon.h"
+#include "../engine/locpanel.h"
 #include <calico/nds/nitrorom.h>
 
 extern const uint8_t res_map_data[], res_map_end[];
@@ -125,6 +126,7 @@ void plat_sleep_ticks(int n)
 
 /* ------------------------------------------------------------- video */
 
+
 static uint8_t status_buf[TOPSTATUS_W * TOPSTATUS_H] __attribute__((aligned(32)));
 
 /* The game can present far more often than the 60 Hz display (the profile
@@ -133,6 +135,12 @@ static uint8_t status_buf[TOPSTATUS_W * TOPSTATUS_H] __attribute__((aligned(32))
 static uint32_t present_tick = 0xffffffff;
 static int present_pending;
 static void present_now(void);
+
+static void status_palette(void)
+{
+    for (int i = 0; i < TOPSTATUS_COLORS; i++)
+        BG_PALETTE[i] = RGB15(topstatus_palette[i][0] >> 3, topstatus_palette[i][1] >> 3, topstatus_palette[i][2] >> 3);
+}
 
 void plat_present(void)
 {
@@ -157,8 +165,7 @@ static void present_now(void)
     int st = topstatus_update(status_buf, vbl_ticks);
     if (st && !top_status) {                 /* switch top screen to the panel */
         top_status = 1;
-        for (int i = 0; i < TOPSTATUS_COLORS; i++)
-            BG_PALETTE[i] = RGB15(topstatus_palette[i][0] >> 3, topstatus_palette[i][1] >> 3, topstatus_palette[i][2] >> 3);
+        status_palette();
         bgSetScroll(bg_top, 0, 0);
         bgShow(bg_top);
         bgUpdate();
@@ -179,18 +186,16 @@ static void present_now(void)
     }
     DC_FlushRange(gfx.display, sizeof gfx.display);
     u16 *t = bgGetGfxPtr(bg_top), *b = bgGetGfxPtr(bg_bot);
-    if (top_status) {
-        if (st == 2) {
-            DC_FlushRange(status_buf, sizeof status_buf);
-            for (int y = 0; y < TOPSTATUS_H; y++)
-                dmaCopy(status_buf + y * TOPSTATUS_W, t + y * 256, TOPSTATUS_W);
-        }
-    }
     const uint8_t *src = gfx.display;
     if (balloon_signature(plat_ticks())) {      /* speech balloon over a copy */
         static uint8_t frame[SCREEN_W * SCREEN_H] __attribute__((aligned(32)));
         memcpy(frame, gfx.display, sizeof frame);
         if (balloon_overlay(frame, plat_ticks())) { DC_FlushRange(frame, sizeof frame); src = frame; }
+    }
+    if (top_status && st == 2) {
+        DC_FlushRange(status_buf, sizeof status_buf);
+        for (int y = 0; y < TOPSTATUS_H; y++)
+            dmaCopy(status_buf + y * TOPSTATUS_W, t + y * 256, TOPSTATUS_W);
     }
     for (int y = 0; y < SCREEN_H; y++)
         dmaCopy(src + y * SCREEN_W, b + y * 256, SCREEN_W);
@@ -231,12 +236,29 @@ static void poll_input(void)
         touching = 0;
         push_event(EV_MOUSEUP, 0);
     }
-    if (down & (KEY_A | KEY_START)) push_event(EV_KEYDOWN, 13);
-    if (down & KEY_B) push_event(EV_KEYDOWN, 27);
-    if (down & KEY_UP) push_event(EV_KEYDOWN, 0x4800);
-    if (down & KEY_DOWN) push_event(EV_KEYDOWN, 0x5000);
-    if (down & KEY_LEFT) push_event(EV_KEYDOWN, 0x4b00);
-    if (down & KEY_RIGHT) push_event(EV_KEYDOWN, 0x4d00);
+    static int click_up;                     /* release of a d-pad "tap" */
+    if (click_up) { click_up = 0; push_event(EV_MOUSEUP, 0); }
+    if (top_status && locpanel_active()) {
+        /* inside a location: the d-pad picks an entry on the top-screen
+         * panel, A taps it in the game */
+        if (down & (KEY_UP | KEY_LEFT)) { locpanel_move(-1); gfx.display_dirty = 1; }
+        if (down & (KEY_DOWN | KEY_RIGHT)) { locpanel_move(1); gfx.display_dirty = 1; }
+        int16_t tx, ty;
+        if ((down & KEY_A) && !touching && locpanel_target(&tx, &ty)) {
+            mouse_x = tx; mouse_y = ty;
+            push_event(EV_MOUSEDOWN, 0);
+            click_up = 1;
+        }
+        if (down & KEY_START) push_event(EV_KEYDOWN, 13);
+        if (down & KEY_B) push_event(EV_KEYDOWN, 27);
+    } else {
+        if (down & (KEY_A | KEY_START)) push_event(EV_KEYDOWN, 13);
+        if (down & KEY_B) push_event(EV_KEYDOWN, 27);
+        if (down & KEY_UP) push_event(EV_KEYDOWN, 0x4800);
+        if (down & KEY_DOWN) push_event(EV_KEYDOWN, 0x5000);
+        if (down & KEY_LEFT) push_event(EV_KEYDOWN, 0x4b00);
+        if (down & KEY_RIGHT) push_event(EV_KEYDOWN, 0x4d00);
+    }
     if (down & KEY_L) push_event(EV_KEYDOWN, 0x3f00);   /* F5: save */
     if (down & KEY_R) push_event(EV_KEYDOWN, 0x4100);   /* F7: restore */
 }

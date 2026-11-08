@@ -9,11 +9,12 @@
 #include "topstatus.h"
 #include "vm.h"
 #include "resource.h"
+#include "locpanel.h"
 
 #define W TOPSTATUS_W
 #define H TOPSTATUS_H
 
-enum { C_BG, C_PANEL, C_TEXT, C_DIM, C_TRACK, C_GOAL, C_MON, C_HAP, C_EDU, C_CAR, C_TITLE, C_DONE, C_COUNT };
+enum { C_BG, C_PANEL, C_TEXT, C_DIM, C_TRACK, C_GOAL, C_MON, C_HAP, C_EDU, C_CAR, C_TITLE, C_DONE, C_SEL, C_COUNT };
 
 const uint8_t topstatus_palette[TOPSTATUS_COLORS][3] = {
     [C_BG]    = {  24,  32,  64 },
@@ -28,6 +29,7 @@ const uint8_t topstatus_palette[TOPSTATUS_COLORS][3] = {
     [C_CAR]   = { 232,  88,  80 },
     [C_TITLE] = { 248, 216, 120 },
     [C_DONE]  = { 255, 255, 160 },
+    [C_SEL]   = {  72,  98, 176 },
 };
 
 static int sel_ready;
@@ -184,6 +186,92 @@ static void draw(int nplayers, const int *idx)
     }
 }
 
+/* Location panel: the open store/office redrawn in the same style. */
+static void wrap(const uint8_t *f, int x, int *y, int w, const char *s, uint8_t c, int fh, int ymax)
+{
+    char line[96];
+    size_t n = 0;
+    const char *p = s;
+    while (*p && *y + fh <= ymax) {
+        while (*p == ' ') p++;
+        n = 0;
+        const char *last_break = NULL;
+        size_t last_n = 0;
+        line[0] = 0;
+        for (const char *q = p; *q && n + 1 < sizeof line; q++) {
+            line[n++] = *q; line[n] = 0;
+            if (*q == ' ') { last_break = q; last_n = n - 1; }
+            if (text_w(f, line) > w) {
+                if (last_break) { line[last_n] = 0; p = last_break + 1; }
+                else { line[n - 1] = 0; p = q; }
+                goto emit;
+            }
+        }
+        p += strlen(p);
+    emit:
+        text(f, x, *y, line, c);
+        *y += fh;
+    }
+}
+
+static void draw_location(void)
+{
+    const uint8_t *small = font(0), *big = font(1);
+    fill(0, 0, W, H, C_BG);
+    if (!small || !big) return;
+    int fh = small[4] | small[5] << 8;
+    /* header: location name, cash top right (the calculator) */
+    const char *cash = locpanel_cash();
+    int cw = cash[0] ? text_w(small, cash) + 12 : 0;
+    if (cw) {
+        fill(W - 4 - cw, 3, cw, fh + 4, C_TRACK);
+        text(small, W - 4 - cw + 6, 5, cash, C_TITLE);
+    }
+    const char *title = locpanel_title();
+    int tw = text_w(big, title), avail = W - 8 - cw;
+    text(big, 4 + (avail > tw ? (avail - tw) / 2 : 0), 3, title, C_TITLE);
+
+    const LocEntry *e;
+    int n = locpanel_entries(&e), sel = locpanel_selected();
+    int top = 19, bottom = H - 3;
+    fill(4, top, W - 8, bottom - top, C_PANEL);
+    /* buttons along the bottom of the panel */
+    int bh = fh + 5, nb = 0, bw_total = 0;
+    for (int i = 0; i < n; i++) if (e[i].kind == LOC_BUTTON) { nb++; bw_total += text_w(small, e[i].label) + 14; }
+    int rows_bottom = bottom - (nb ? bh + 6 : 2);
+    if (nb) {
+        int gap = nb > 1 ? (W - 16 - bw_total) / (nb - 1) : 0;
+        if (gap > 10) gap = 10;
+        if (gap < 2) gap = 2;
+        int total = bw_total + gap * (nb - 1);
+        int x = (W - total) / 2, y = bottom - bh - 3;
+        for (int i = 0; i < n; i++) {
+            if (e[i].kind != LOC_BUTTON) continue;
+            int bw = text_w(small, e[i].label) + 14;
+            fill(x, y, bw, bh, i == sel ? C_SEL : C_TRACK);
+            if (i == sel) { fill(x, y, bw, 1, C_GOAL); fill(x, y + bh - 1, bw, 1, C_GOAL); }
+            text(small, x + 7, y + 3, e[i].label, !e[i].enabled ? C_DIM : i == sel ? C_DONE : C_TEXT);
+            x += bw + gap;
+        }
+    }
+    /* rows: messages wrap, items get a price column and the highlight */
+    int y = top + 4, rh = fh + 4;
+    for (int i = 0; i < n && y + fh <= rows_bottom; i++) {
+        if (e[i].kind == LOC_BUTTON) continue;
+        if (e[i].kind == LOC_MESSAGE) {
+            wrap(small, 10, &y, W - 20, e[i].label, C_DIM, fh, rows_bottom);
+            y += 2;
+            continue;
+        }
+        if (i == sel) fill(6, y - 2, W - 12, rh, C_SEL);
+        uint8_t tc = !e[i].enabled ? C_DIM : i == sel ? C_DONE : C_TEXT;
+        if (i == sel) text(small, 9, y, ">", C_GOAL);
+        text(small, 17, y, e[i].label, tc);
+        if (e[i].price[0]) text(small, W - 12 - text_w(small, e[i].price), y, e[i].price, i == sel ? C_DONE : C_TITLE);
+        y += rh;
+    }
+}
+
 /* ------------------------------------------------------------ public */
 
 int topstatus_update(uint8_t *out, uint32_t now)
@@ -206,6 +294,14 @@ int topstatus_update(uint8_t *out, uint32_t now)
 
     /* redraw only when something shown changed */
     static uint32_t last_sig = 0xffffffff;
+    if (locpanel_active()) {
+        uint32_t ls = locpanel_signature() * 2246822519u + 1;
+        if (ls == last_sig && out == buf) return 1;
+        last_sig = ls;
+        buf = out;
+        draw_location();
+        return 2;
+    }
     uint32_t sig = (uint32_t)n * 2654435761u;
     for (int k = 0; k < n; k++) {
         reg_t p = players[idx[k]];

@@ -6,6 +6,7 @@
 #include "kernel.h"
 #include "gfx.h"
 #include "balloon.h"
+#include "locpanel.h"
 #include "resource.h"
 
 #define ARG(i)   hp16((uint16_t)(argv + 2 * (i)))
@@ -593,6 +594,7 @@ static int new_window(Rect dims, const Rect *restore, const char *title, int sty
     w->left = w->rect.left;
     w->top = (int16_t)(w->rect.top + ports[wmgr_port].top);
     rect_move(&w->rect, -w->rect.left, -w->rect.top);
+    locpanel_window_open(id, w->dims.left, w->dims.top, w->dims.right, w->dims.bottom);
     return id;
 }
 
@@ -609,12 +611,14 @@ static void dispose_window(int id, int reanimate)
     else redraw_cast_box(w->restore);
     window_list_remove(id);
     w->used = 0;
+    locpanel_window_close(id);
     set_port(nwindows ? window_order[nwindows - 1] : wmgr_port);
 }
 
 static void ports_init(void)
 {
     memset(ports, 0, sizeof ports);
+    locpanel_reset();
     for (int i = 1; i < MAX_BITS; i++) if (bits[i].used) bits_free((uint16_t)(0xb000 | i));
     nwindows = 0;
     /* window manager port: whole screen (Jones runs with -w 0 0 200 320) */
@@ -990,6 +994,8 @@ static void draw_control(reg_t o, int hilite)
     Rect r = ns_rect(o);
     if (getenv("GRAPHLOG")) vm_log("DrawControl %s type %d state %x rect %d,%d,%d,%d view %d loop %d cel %d\n", obj_name(o), type, style,
         r.top, r.left, r.bottom, r.right, GS(o, S_view), GS(o, S_loop), GS(o, S_cel));
+    locpanel_control(cur_port, obj_name(o), type, style, GS(o, S_view),
+                     r.left + P()->left, r.top + P()->top, r.right + P()->left, r.bottom + P()->top);
     switch (type) {
     case CTL_BUTTON:
         if (!hilite) {
@@ -1142,6 +1148,7 @@ static reg_t kernel_display(int argc, uint16_t argv)
     Rect r;
     text_size(&r, buf, P()->font, width);
     rect_move(&r, P()->cur_left, P()->cur_top);
+    locpanel_text(cur_port, buf, r.left + P()->left, r.top + P()->top, r.right + P()->left, r.bottom + P()->top);
     if (save_under) result = bits_save(r, MASK_VISUAL);
     if (back != -1) fill_rect(r, MASK_VISUAL, (uint8_t)back, 0, 0);
     text_box(buf, r, align, -1);
@@ -1645,6 +1652,7 @@ reg_t kgfx_call(int num, int argc, uint16_t argv, int *handled)
         int pri = argc > 6 + extra ? SARG(6 + extra) : -1;
         int pen = argc > 7 + extra ? SARG(7 + extra) : 0;
         int back = argc > 8 + extra ? SARG(8 + extra) : 255;
+        if (getenv("GRAPHLOG")) vm_log("NewWindow %d,%d,%d,%d style %x title %s by %s\n", r.top, r.left, r.bottom, r.right, style, title ? title : "-", obj_name(vm_self));
         return (reg_t)new_window(r, prr, title, style, pri, (uint8_t)pen, (uint8_t)back);
     }
     case 0x14: return (reg_t)cur_port;                 /* GetPort */

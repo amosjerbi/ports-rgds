@@ -516,6 +516,7 @@ const char *vm_string(reg_t addr, reg_t next, int *used_next)
 #define TOP()   hp16((uint16_t)(vm.sp - 2))
 
 static int depth;
+reg_t vm_self;
 static reg_t execute(int script, uint16_t pc, reg_t self, uint16_t params);
 
 static reg_t send_frame(reg_t obj, reg_t lookup, uint16_t frame, int nwords)
@@ -675,6 +676,7 @@ static reg_t execute(int script, uint16_t pc, reg_t self, uint16_t params)
             vm.rest = 0;
             vm.sp = (uint16_t)(base + 2 * (argc + 1));
             vm.acc = acc;
+            vm_self = self;            /* who called the kernel (top-screen panel) */
             acc = kernel_call(a, argc, (uint16_t)(base + 2));
             vm.sp = base;
             break;

@@ -19,7 +19,7 @@ GAMEDIR  ?= $(CURDIR)/Jones-in-the-Fast-Lane_DOS_EN
 ARM7ELF  ?= $(CALICO)/bin/ds7_ragdoll.elf
 
 ENGINE   := src/engine/resource.c src/engine/decompress.c src/engine/gfx.c
-NDS_SRC  := src/nds/main.c $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c
+NDS_SRC  := src/nds/main.c $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c src/engine/locpanel.c
 NDS_ASM  := src/nds/gamedata.s
 
 ARCH9    := -march=armv5te -mtune=arm946e-s -mthumb
@@ -125,7 +125,7 @@ build/mac/gfxtest: tools/gfxtest.c $(ENGINE) src/engine/resource.h src/engine/gf
 	@mkdir -p $(dir $@)
 	cc -O2 -Wall -Wextra -o $@ tools/gfxtest.c $(ENGINE)
 
-ENGINE_ALL := $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c
+ENGINE_ALL := $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c src/engine/locpanel.c
 scirun: build/mac/scirun
 build/mac/scirun: tools/scirun.c $(ENGINE_ALL) $(wildcard src/engine/*.h)
 	@mkdir -p $(dir $@)

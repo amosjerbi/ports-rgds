@@ -67,6 +67,7 @@ typedef struct {
     int  trace;
 } VmState;
 extern VmState vm;
+extern reg_t vm_self;   /* object whose method made the current kernel call */
 
 int   vm_init(void);
 void  vm_run_game(void);

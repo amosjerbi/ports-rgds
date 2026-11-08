@@ -14,6 +14,7 @@
 #include "../src/engine/subtitle.h"
 #include "../src/engine/balloon.h"
 #include "../src/engine/topstatus.h"
+#include "../src/engine/locpanel.h"
 
 static uint32_t ticks;
 static uint32_t max_ticks = 60 * 120;
@@ -82,7 +83,7 @@ void plat_sleep_ticks(int n)
         if (getenv("TOPPNG")) {
             static uint8_t top[TOPSTATUS_W * TOPSTATUS_H];
             int r = topstatus_update(top, ticks);
-            printf("topstatus: %d\n", r);
+            printf("topstatus: %d location %d\n", r, locpanel_active());
             FILE *f = fopen(getenv("TOPPNG"), "wb");
             fprintf(f, "P6\n%d %d\n255\n", TOPSTATUS_W, TOPSTATUS_H);
             for (int i = 0; i < TOPSTATUS_W * TOPSTATUS_H; i++) fwrite(topstatus_palette[top[i] % TOPSTATUS_COLORS], 1, 3, f);
