@@ -1,4 +1,5 @@
-/* Life-goals panel for a second screen (the DS top screen).
+/* Player panel for a second screen (the DS top screen): job and wage,
+ * cash, and the life goals as slim bars.
  *
  * Once a game is under way (the player's walker is in the cast), the
  * players' goals and progress are read straight from the game's player
@@ -33,7 +34,7 @@ const uint8_t topstatus_palette[TOPSTATUS_COLORS][3] = {
 };
 
 static int sel_ready;
-static int S_playing, S_actualName, S_cash, S_cashHi, S_elements;
+static int S_playing, S_actualName, S_cash, S_cashHi, S_elements, S_worksAt, S_occupation, S_wage;
 static int S_goal[4], S_stat[4];
 static reg_t players[4], walker, cast;
 static uint32_t last_scan;
@@ -49,6 +50,9 @@ static void init_sel(void)
     S_cash = sel_id("cash");
     S_cashHi = sel_id("cashHi");
     S_elements = sel_id("elements");
+    S_worksAt = sel_id("worksAt");
+    S_occupation = sel_id("occupation");
+    S_wage = sel_id("wage");
     sel_ready = 1;
 }
 
@@ -132,22 +136,86 @@ static int text(const uint8_t *f, int x, int y, const char *s, uint8_t c)
     return x;
 }
 
-static void bar(const uint8_t *f, int x, int y, int w, int h, const char *label, int stat, int goal, uint8_t col)
+/* Jobs: player `occupation` is the job's global indexNum (the jobs scripts
+ * 216-224), `worksAt` the employer's store script minus 200, `wage` $/hr. */
+static const char *job_name(int occ)
+{
+    static const char *names[] = {
+        "Clerk", "Janitor", "Cook", "Assistant Manager", "Manager", "Salesperson",
+        "Teacher", "Professor", "Assembly Worker", "Secretary", "Machinist's Helper",
+        "Executive Secretary", "Machinist", "Engineer", "Department Manager",
+        "General Manager", "Teller", "Investment Broker", "Checker", "Butcher",
+        "Groundskeeper", "Apartment Manager", "Electronics Repair",
+    };
+    occ -= 42;
+    return occ >= 0 && occ < (int)(sizeof names / sizeof *names) ? names[occ] : "Employed";
+}
+
+static const char *employer_name(int at)
+{
+    switch (at) {
+    case 1:  return "Rent Office";
+    case 3:  return "Black's Market";
+    case 4:  return "Bank";
+    case 5:  return "Factory";
+    case 7:  return "Hi-Tech University";
+    case 8:  return "Socket City";
+    case 9:  return "QT Clothing";
+    case 10: return "Monolith Burgers";
+    case 11: return "Z-Mart";
+    default: return "";
+    }
+}
+
+/* Slim goal bar: dim label, thin track, small value. */
+static void bar(const uint8_t *f, int x, int y, int w, int h, int lw, int vw, const char *label, int stat, int goal, uint8_t col)
 {
     if (stat < 0) stat = 0;
     if (stat > 100) stat = 100;
     if (goal < 0) goal = 0;
     if (goal > 100) goal = 100;
-    int lw = 66;
-    text(f, x, y + (h - (f[4] | f[5] << 8)) / 2, label, C_DIM);
-    int bx = x + lw, bw = w - lw - 34;
-    fill(bx, y, bw, h, C_TRACK);
-    fill(bx, y, bw * stat / 100, h, col);
-    int gx = bx + bw * goal / 100;
-    fill(gx - 1, y - 1, 2, h + 2, C_GOAL);
+    int fh = f[4] | f[5] << 8;
     char s[16];
     snprintf(s, sizeof s, "%d/%d", stat, goal);
-    text(f, bx + bw + 4, y + (h - (f[4] | f[5] << 8)) / 2, s, stat >= goal ? C_DONE : C_TEXT);
+    int ty = y + (h - fh) / 2;
+    text(f, x, ty, label, C_DIM);
+    int bx = x + lw, bw = w - lw - vw;
+    fill(bx, y, bw, h, C_TRACK);
+    fill(bx, y, bw * stat / 100, h, col);
+    fill(bx + bw * goal / 100 - 1, y, 1, h, C_DIM);
+    text(f, x + w - text_w(f, s), ty, s, stat >= goal ? C_DONE : C_DIM);
+}
+
+static int uw(reg_t p, int sel) { return sel < 0 ? 0 : (int16_t)get_sel(p, sel); }
+
+/* Job line(s): title (+ employer) on the left, wage on the right. */
+static void job(const uint8_t *tf, const uint8_t *sf, int x, int y, int w, reg_t p, int compact)
+{
+    int occ = uw(p, S_occupation), at = uw(p, S_worksAt), wage = uw(p, S_wage);
+    if (!at || !occ) {
+        text(tf, x, y, "Unemployed", C_DIM);
+        if (!compact) text(sf, x, y + (tf[4] | tf[5] << 8) + 2, "Visit the Employment Office", C_DIM);
+        return;
+    }
+    char ws[16];
+    snprintf(ws, sizeof ws, "$%d/hr", wage);
+    int wx = x + w - text_w(tf, ws);
+    text(tf, wx, y, ws, C_MON);
+    const char *title = job_name(occ), *emp = employer_name(at);
+    if (compact) {
+        char line[64];
+        snprintf(line, sizeof line, emp[0] ? "%s, %s" : "%s", title, emp);
+        /* drop the employer if it would run into the wage */
+        if (text_w(tf, line) > wx - x - 6) snprintf(line, sizeof line, "%s", title);
+        text(tf, x, y, line, C_TEXT);
+    } else {
+        text(tf, x, y, title, C_TEXT);
+        if (emp[0]) {
+            char at_s[40];
+            snprintf(at_s, sizeof at_s, "at %s", emp);
+            text(sf, x, y + (tf[4] | tf[5] << 8) + 2, at_s, C_DIM);
+        }
+    }
 }
 
 static void draw(int nplayers, const int *idx)
@@ -155,33 +223,71 @@ static void draw(int nplayers, const int *idx)
     const uint8_t *small = font(0), *big = font(1);
     fill(0, 0, W, H, C_BG);
     if (!small || !big) return;
-    int area = H;
-    const char *title = "LIFE GOALS";
-    text(big, (W - text_w(big, title)) / 2, 3, title, C_TITLE);
+    int fh = small[4] | small[5] << 8, bh = big[4] | big[5] << 8;
     static const char *labels[4] = { "Wealth", "Happiness", "Education", "Career" };
     static const uint8_t cols[4] = { C_MON, C_HAP, C_EDU, C_CAR };
-    int top = 19, avail = area - top - 2;
-    int ph = avail / (nplayers ? nplayers : 1);
-    int barh = nplayers == 1 ? (area < H ? 9 : 12) : nplayers == 2 ? (area < H ? 6 : 9) : area < H ? 4 : 6;
-    int gap = (ph - 12 - 4 * barh) / 5;
-    if (gap < 1) gap = 1;
+    static const char *short_labels[4] = { "Wealth", "Happy", "Educ.", "Career" };
+    int lw = text_w(small, "Happiness") + 6, vw = text_w(small, "100/100") + 4;
+
+    if (nplayers == 1) {
+        reg_t p = players[idx[0]];
+        /* header: name, cash top right */
+        reg_t nm = get_sel(p, S_actualName);
+        char name[40], cs[24];
+        snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : "Player");
+        uint32_t cash = (uint16_t)get_sel(p, S_cash) | (uint32_t)(uint16_t)get_sel(p, S_cashHi) << 16;
+        snprintf(cs, sizeof cs, "$%lu", (unsigned long)cash);
+        int cw = text_w(small, cs) + 12;
+        fill(W - 4 - cw, 3, cw, fh + 4, C_TRACK);
+        text(small, W - 4 - cw + 6, 5, cs, C_TITLE);
+        text(big, 6, 3, name, C_TITLE);
+        /* job card */
+        int jy = 20, jh = 14 + bh + 2 * fh + 6;
+        fill(4, jy, W - 8, jh, C_PANEL);
+        text(small, 10, jy + 4, "JOB", C_DIM);
+        job(big, small, 10, jy + 6 + fh + 3, W - 20, p, 0);
+        /* life goals, compact */
+        int gy = jy + jh + 8;
+        text(small, 6, gy, "Life goals", C_DIM);
+        fill(6 + text_w(small, "Life goals") + 4, gy + fh / 2, W - 16 - text_w(small, "Life goals"), 1, C_PANEL);
+        gy += fh + 6;
+        int rowh = (H - 4 - gy) / 4;
+        if (rowh > fh + 8) rowh = fh + 8;
+        for (int i = 0; i < 4; i++)
+            bar(small, 8, gy + i * rowh + (rowh - 5) / 2, W - 16, 5, lw, vw, labels[i],
+                uw(p, S_stat[i]), uw(p, S_goal[i]), cols[i]);
+        return;
+    }
+
+    /* several players: one card each with name, cash, job and slim goals */
+    int ph = (H - 4) / nplayers;
     for (int k = 0; k < nplayers; k++) {
         reg_t p = players[idx[k]];
-        int y = top + k * ph;
+        int y = 2 + k * ph;
         fill(4, y, W - 8, ph - 3, C_PANEL);
         reg_t nm = get_sel(p, S_actualName);
-        char name[40];
+        char name[40], cs[24];
         snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : "Player");
-        text(small, 9, y + 2, name, C_TEXT);
         uint32_t cash = (uint16_t)get_sel(p, S_cash) | (uint32_t)(uint16_t)get_sel(p, S_cashHi) << 16;
-        char cs[24];
         snprintf(cs, sizeof cs, "$%lu", (unsigned long)cash);
+        text(small, 9, y + 2, name, C_TITLE);
         text(small, W - 9 - text_w(small, cs), y + 2, cs, C_TITLE);
-        int by = y + 12 + gap;
-        for (int i = 0; i < 4; i++) {
-            bar(small, 9, by, W - 18, barh, labels[i], (int16_t)get_sel(p, S_stat[i]),
-                (int16_t)get_sel(p, S_goal[i]), cols[i]);
-            by += barh + gap;
+        job(small, small, 9, y + 3 + fh, W - 18, p, 1);
+        int gy = y + 5 + 2 * fh, gh = ph - 3 - (gy - y) - 2;
+        if (gh >= 4 * (fh + 2)) {
+            /* room for one full-width row per goal */
+            int rowh = gh / 4;
+            for (int i = 0; i < 4; i++)
+                bar(small, 9, gy + i * rowh + (rowh - 4) / 2, W - 18, 4, lw, vw, labels[i],
+                    uw(p, S_stat[i]), uw(p, S_goal[i]), cols[i]);
+        } else {
+            /* 2x2 grid with short labels */
+            int rowh = gh / 2, half = (W - 18 - 10) / 2;
+            int slw = text_w(small, "Career") + 4, svw = text_w(small, "50/50") + 4;
+            for (int i = 0; i < 4; i++) {
+                int bx = 9 + (i & 1) * (half + 10), by = gy + (i >> 1) * rowh + (rowh - 3) / 2;
+                bar(small, bx, by, half, 3, slw, svw, short_labels[i], uw(p, S_stat[i]), uw(p, S_goal[i]), cols[i]);
+            }
         }
     }
 }
@@ -308,6 +414,7 @@ int topstatus_update(uint8_t *out, uint32_t now)
         for (int i = 0; i < 4; i++)
             sig = sig * 31 + get_sel(p, S_goal[i]) * 7 + get_sel(p, S_stat[i]);
         sig = sig * 31 + get_sel(p, S_cash) + (get_sel(p, S_cashHi) << 8) + get_sel(p, S_actualName);
+        sig = sig * 31 + uw(p, S_worksAt) * 977 + uw(p, S_occupation) * 31 + uw(p, S_wage);
     }
     if (sig == last_sig && out == buf) return 1;
     last_sig = sig;

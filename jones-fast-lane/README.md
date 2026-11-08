@@ -36,9 +36,10 @@ game; see **[BUILDING.md](BUILDING.md)**.
 
 - **Bottom screen:** the 320×200 game, scaled by the DS hardware. Tap to click.
   The d-pad acts as the arrow keys; A/Start = Enter, B = Esc.
-- **Top screen:** a *Life Goals* panel showing each player's cash and their
-  wealth, happiness, education and career progress against their goals. It
-  turns on once a game starts and stays dark before that.
+- **Top screen:** a player panel showing your current job, employer and
+  hourly wage, plus your cash, with slim bars below for wealth, happiness,
+  education and career progress against your goals. It turns on once a game
+  starts and stays dark before that.
 - **Location panel:** inside a store, the bank, the university or another
   location, the top screen redraws it in the same style: the location's name,
   your cash top right, its items with prices and its buttons. The d-pad picks
@@ -66,7 +67,7 @@ game; see **[BUILDING.md](BUILDING.md)**.
 | Pics, views, fonts, SCI1 palette merge | `src/engine/gfx.c`, `kgraphics.c` |
 | Music synth, DoSound (early and late SCI1 numbering) | `src/engine/music.c`, `ksound.c` |
 | CD speech, lip sync, subtitles, balloons | `src/engine/voice.c`, `subtitle.c`, `balloon.c` |
-| Top-screen life goals and location panel | `src/engine/topstatus.c`, `locpanel.c` |
+| Top-screen job card, life goals and location panel | `src/engine/topstatus.c`, `locpanel.c` |
 | DS platform: video, touch, audio thread, NitroFS, saves | `src/nds/main.c` |
 | Subtitle table builder (floppy text → CD clip numbers) | `tools/textdump.c`, `tools/mksubs.py` |
 | Headless test runner (renders frames, WAV, traces) | `tools/scirun.c` |
