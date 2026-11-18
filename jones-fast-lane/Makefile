@@ -1,6 +1,8 @@
 # Jones in the Fast Lane - NDS port (see BUILDING.md)
 #   make          -> build/jones.nds         (floppy release, needs GAMEDIR)
 #   make cd       -> build/jones-cdrom.nds   (CD release with voices, needs CDDIR + GAMEDIR)
+#   make he       -> build/jones-he.nds      (floppy release, top screen in Hebrew)
+#   make cd-he    -> build/jones-cdrom-he.nds (CD release, top screen in Hebrew)
 #   make mac      -> build/mac/restest (host test tool)
 #   make test     -> run host resource test
 #
@@ -32,7 +34,7 @@ LIBS9    := -lfat -lnds9 -lcalico_ds9 -lm
 OBJDIR   := build/nds
 OBJS     := $(patsubst src/%.c,$(OBJDIR)/%.o,$(NDS_SRC)) $(OBJDIR)/nds/gamedata.o
 
-.PHONY: all cd mac test gfxtest scirun musicwav clean
+.PHONY: all cd he cd-he mac test gfxtest scirun musicwav clean
 all: build/jones.nds
 
 # Friendly errors when the game's files are not where the build expects them.
@@ -109,6 +111,61 @@ $(OBJDIR)/nds/gamedata.o: $(NDS_ASM) $(GAMEDIR)/resource.map $(GAMEDIR)/resource
 	@mkdir -p $(dir $@)
 	$(CC9) $(ARCH9) -x assembler-with-cpp -DGAMEDIR=$(GAMEDIR) -c $< -o $@
 
+# Hebrew top screen: same game, -DHEBREW, plus the font and table generated from the translation folder
+# (../jones-fast-lane-hebrew in the repo: hebrew.tsv, mkhebrew.py, hebrew.c/.h)
+HEDIR    ?= $(abspath $(CURDIR)/../jones-fast-lane-hebrew)
+HE_SRC   := $(HEDIR)/hebrew.c
+he: build/jones-he.nds
+cd-he: build/jones-cdrom-he.nds
+
+build/hebrew_data.c: $(HEDIR)/mkhebrew.py $(HEDIR)/hebrew.tsv
+	python3 $(HEDIR)/mkhebrew.py $(HEDIR)/hebrew.tsv $@
+
+HEOBJS   := $(patsubst $(OBJDIR)/%,build/nds-he/%,$(OBJS)) build/nds-he/hebrew.o build/nds-he/hebrew_data.o
+CDHEOBJS := $(patsubst $(CDOBJDIR)/%,build/nds-cd-he/%,$(CDOBJS)) build/nds-cd-he/hebrew.o build/nds-cd-he/hebrew_data.o
+
+build/jones-he.nds: build/jones-he.elf
+	$(NDSTOOL) -c $@ -9 $< -7 $(ARM7ELF) -b $(CALICO)/share/nds-icon.bmp \
+	  "Jones in the Fast Lane;Sierra On-Line 1991;NDS port (Hebrew)"
+build/jones-he.elf: $(HEOBJS)
+	$(CC9) $(LDFLAGS9) $^ $(LIBS9) -o $@
+build/nds-he/%.itcm.o: src/%.itcm.c $(wildcard src/nds/*.h)
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -DHEBREW -marm -O3 -c $< -o $@
+build/nds-he/hebrew_data.o: build/hebrew_data.c $(HEDIR)/hebrew.h
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -I$(HEDIR) -c $< -o $@
+build/nds-he/hebrew.o: $(HEDIR)/hebrew.c $(HEDIR)/hebrew.h
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -I$(HEDIR) -c $< -o $@
+build/nds-he/%.o: src/%.c $(wildcard src/engine/*.h)
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -DHEBREW -I$(HEDIR) $(NDSEXTRA) -c $< -o $@
+build/nds-he/nds/gamedata.o: $(OBJDIR)/nds/gamedata.o
+	@mkdir -p $(dir $@)
+	cp $< $@
+
+build/jones-cdrom-he.nds: build/jones-cdrom-he.elf build/jones-cdrom.nds
+	$(NDSTOOL) -c $@ -9 $< -7 $(ARM7ELF) -b $(CALICO)/share/nds-icon.bmp \
+	  "Jones in the Fast Lane CD;Sierra On-Line 1991;NDS port (voices, Hebrew)" -d build/cdfs
+build/jones-cdrom-he.elf: $(CDHEOBJS)
+	$(CC9) $(LDFLAGS9) $^ $(LIBS9) -o $@
+build/nds-cd-he/%.itcm.o: src/%.itcm.c $(wildcard src/nds/*.h)
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -DCDROM -DHEBREW $(CDEXTRA) -marm -O3 -c $< -o $@
+build/nds-cd-he/hebrew_data.o: build/hebrew_data.c $(HEDIR)/hebrew.h
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -I$(HEDIR) -c $< -o $@
+build/nds-cd-he/hebrew.o: $(HEDIR)/hebrew.c $(HEDIR)/hebrew.h
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -I$(HEDIR) -c $< -o $@
+build/nds-cd-he/%.o: src/%.c $(wildcard src/engine/*.h)
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -DCDROM -DHEBREW -I$(HEDIR) $(CDEXTRA) -c $< -o $@
+build/nds-cd-he/nds/gamedata.o: $(CDOBJDIR)/nds/gamedata.o
+	@mkdir -p $(dir $@)
+	cp $< $@
+
 mac: build/mac/restest
 build/mac/restest: tools/restest.c $(ENGINE) src/engine/resource.h
 	@mkdir -p $(dir $@)
@@ -118,7 +175,7 @@ test: build/mac/restest
 	./build/mac/restest $(GAMEDIR)
 
 clean:
-	rm -rf build/nds build/jones.elf build/jones.nds build/mac build/nds-cd build/cdfs build/jones-cdrom.elf build/jones-cdrom.nds
+	rm -rf build/nds-he build/nds-cd-he build/jones-he.* build/jones-cdrom-he.* build/hebrew_data.c build/nds build/jones.elf build/jones.nds build/mac build/nds-cd build/cdfs build/jones-cdrom.elf build/jones-cdrom.nds
 
 gfxtest: build/mac/gfxtest
 	@mkdir -p build/gfx
@@ -131,6 +188,9 @@ build/mac/gfxtest: tools/gfxtest.c $(ENGINE) src/engine/resource.h src/engine/gf
 
 ENGINE_ALL := $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c src/engine/locpanel.c
 scirun: build/mac/scirun
+build/mac/scirun-he: tools/scirun.c $(ENGINE_ALL) $(HE_SRC) build/hebrew_data.c $(wildcard src/engine/*.h) $(HEDIR)/hebrew.h
+	@mkdir -p $(dir $@)
+	cc -O1 -g -Wall -Wextra -Wno-unused-parameter -DHEBREW -Isrc/engine -I$(HEDIR) -o $@ tools/scirun.c $(ENGINE_ALL) $(HE_SRC) build/hebrew_data.c -lm
 build/mac/scirun: tools/scirun.c $(ENGINE_ALL) $(wildcard src/engine/*.h)
 	@mkdir -p $(dir $@)
 	cc -O1 -g -Wall -Wextra -Wno-unused-parameter -o $@ tools/scirun.c $(ENGINE_ALL) -lm

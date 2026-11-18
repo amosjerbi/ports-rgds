@@ -1,0 +1,636 @@
+# Hebrew translations for the top screen (make he / make cd-he). English<TAB>Hebrew, UTF-8.
+# Keys are matched after the same clean-up the location panel does: '|' and newlines become spaces,
+# runs of spaces collapse, trailing dots and spaces go. %d matches a number, %s any text; the Hebrew
+# side uses them in the same order. Lines starting with # are comments.
+#
+# --- top screen labels (topstatus.c)
+Player %d	שחקן %d
+Player	שחקן
+JOB	עבודה
+Life goals	מטרות בחיים
+Wealth	עושר
+Happiness	אושר
+Happy	אושר
+Education	השכלה
+Educ.	השכלה
+Career	קריירה
+Unemployed	מובטל
+Visit the Employment Office	בקרו בלשכת התעסוקה
+Employed	מועסק
+$%d/hr	$%d לשעה
+at %s	מקום עבודה: %s
+#
+# --- jobs (topstatus.c job_name, jobs scripts 216-224)
+Clerk	פקיד
+Janitor	שרת
+Cook	טבח
+Assistant Manager	סגן מנהל
+Manager	מנהל
+Salesperson	איש מכירות
+Teacher	מורה
+Professor	פרופסור
+Assembly Worker	עובד פס ייצור
+Secretary	מזכיר
+Machinist's Helper	עוזר מכונאי
+Executive Secretary	מזכיר בכיר
+Machinist	מכונאי
+Engineer	מהנדס
+Department Manager	מנהל מחלקה
+General Manager	מנהל כללי
+Teller	טלר
+Investment Broker	ברוקר השקעות
+Checker	קופאי
+Butcher	קצב
+Groundskeeper	גנן
+Apartment Manager	מנהל בניין
+Electronics Repair	תיקון אלקטרוניקה
+Electronic's Repair	תיקון אלקטרוניקה
+#
+# --- places (titles, employers)
+Low-Cost Housing	דיור זול
+Rent Office	משרד השכירות
+Le Securite Apts	דירות לה סקיוריטה
+The Factory	המפעל
+Factory	המפעל
+Employment Office	לשכת התעסוקה
+Monolith Burgers	מונוליט בורגרס
+Pawn Shop	בית העבוט
+Black's Market	השוק של בלאק
+Bank	הבנק
+Hi-Tech University	אוניברסיטת היי-טק
+Socket City	סוקט סיטי
+Socket City Appliance	מכשירי סוקט סיטי
+QT Clothing	ביגוד QT
+Z-Mart	זי-מארט
+Z-Mart Discount	זי-מארט דיסקאונט
+Discount Store Jobs Available:	משרות פנויות בחנות ההנחות:
+Monolith's Jobs Available:	משרות פנויות במונוליט:
+QT Clothing Jobs Available:	משרות פנויות בביגוד QT:
+Socket City Jobs Available:	משרות פנויות בסוקט סיטי:
+University Jobs Available:	משרות פנויות באוניברסיטה:
+Factory Jobs Available:	משרות פנויות במפעל:
+Bank Jobs Available:	משרות פנויות בבנק:
+Black's Market Jobs Available:	משרות פנויות בשוק של בלאק:
+Rent Office Jobs Available:	משרות פנויות במשרד השכירות:
+#
+# --- buttons and picture items (locpanel.c pretty(): object names)
+Done	סיום
+Work	לעבוד
+Pay Rent	לשלם שכירות
+More Time	עוד זמן
+Pay Garnishment	לשלם עיקול
+Rent Low Cost	לשכור דירה זולה
+Rent Security	לשכור דירה מאובטחת
+Deposit	הפקדה
+Withdraw	משיכה
+Loan Payment	תשלום הלוואה
+Apply For Loan	בקשת הלוואה
+See Broker	לברוקר
+See The Broker	לברוקר
+Enroll	הרשמה
+Enrollment Fee	דמי הרשמה
+Buy	קנייה
+Sell	מכירה
+Pawn	משכון
+Redeem	פדייה
+Done Buying	סיום קנייה
+Done Pawning	סיום משכון
+Done Redeeming	סיום פדייה
+Relax	מנוחה
+Yes	כן
+YES	כן
+NO	לא
+No	לא
+Take It	לקחת
+Leave It	לוותר
+Pawnable Items	פריטים למשכון
+Buyable Items	פריטים לקנייה
+Redeemable Items	פריטים לפדייה
+Market	שוק
+Value	שווי
+Your	שלך
+Holdings	אחזקות
+#
+# --- courses (Hi-Tech U)
+Junior College	מכינה
+Trade School	בית ספר מקצועי
+Pre Engineering	קדם הנדסה
+Engineering	הנדסה
+Electronics	אלקטרוניקה
+Academic	אקדמי
+Graduate	תואר שני
+Post Doctoral	פוסט דוקטורט
+Research	מחקר
+Publishing	הוצאה לאור
+University	אוניברסיטה
+Books	ספרים
+#
+# --- stocks (broker)
+T Bills	אג"ח ממשלתי
+Gold	זהב
+Silver	כסף
+Pork Bellies	בשר חזיר
+Blue Chip Stocks	מניות בלו צ'יפ
+Penny Stocks	מניות זבל
+T Bills Holdings	אחזקות אג"ח
+Gold Holdings	אחזקות זהב
+Silver Holdings	אחזקות כסף
+Pork Bellies Holdings	אחזקות בשר חזיר
+Blue Chip Stocks Holdings	אחזקות בלו צ'יפ
+Penny Stocks Holdings	אחזקות מניות זבל
+Broker	ברוקר
+#
+# --- items
+Food For 1 Week	אוכל לשבוע
+Food For 2 Weeks	אוכל לשבועיים
+Food For 4 Weeks	אוכל ל-4 שבועות
+Food For1Week	אוכל לשבוע
+Food For2Weeks	אוכל לשבועיים
+Food For4Weeks	אוכל ל-4 שבועות
+10 Lottery Tickets	10 כרטיסי לוטו
+Lottery Tickets	כרטיסי לוטו
+Newspaper	עיתון
+Refrigerator	מקרר
+Freezer	מקפיא
+Stove	כיריים
+Color TV	טלוויזיה צבעונית
+VCR	וידאו
+Stereo	מערכת סטריאו
+Microwave	מיקרוגל
+Hot Tub	ג'קוזי
+Computer	מחשב
+Business Suit	חליפת עסקים
+Dress Clothes	בגדים חגיגיים
+Casual Clothes	בגדים יומיומיים
+Leisure Suit	חליפת פנאי
+Hamburgers	המבורגרים
+Cheeseburger	צ'יזבורגר
+Cheeseburgers	צ'יזבורגרים
+Astro Chicken	אסטרו צ'יקן
+Chicken	עוף
+Fries	צ'יפס
+Shakes	מילקשייק
+Colas	קולה
+Black & White TV	טלוויזיה שחור-לבן
+Bw TV	טלוויזיה שחור-לבן
+Baseball Tickets	כרטיסים לבייסבול
+Theatre Tickets	כרטיסים לתיאטרון
+Concert Tickets	כרטיסים להופעה
+Encyclopedia	אנציקלופדיה
+Dictionary	מילון
+Atlas	אטלס
+Dog Food	אוכל לכלבים
+8-Track Player	נגן קלטות 8 ערוצים
+Eight Track	נגן קלטות 8 ערוצים
+Works of Capote	כתבי קפוטה
+Truman Capote	כתבי קפוטה
+No Redeemable Items	אין פריטים לפדייה
+No Pawned Items For Sale	אין פריטים ממושכנים למכירה
+#
+# --- employment office
+Not enough Education	אין מספיק השכלה
+Not enough Experience	אין מספיק ניסיון
+Poor work History	עבר תעסוקתי גרוע
+No openings	אין משרות פנויות
+Why are you asking for less money?	למה אתה מבקש פחות כסף?
+Why are you asking for the same wage?	למה אתה מבקש את אותו שכר?
+Congratulations. You have been given a raise	מזל טוב. קיבלת העלאה
+Sorry. We cannot grant your request at this time	מצטערים. איננו יכולים להיענות לבקשתך כרגע
+Congratulations. You got the job	מזל טוב. קיבלת את העבודה
+Sorry. We're closing. You'll have to come back next week	מצטערים, אנחנו סוגרים. תצטרך לחזור בשבוע הבא
+Sorry. You didn't get the job for the following reasons:	מצטערים. לא קיבלת את העבודה מהסיבות הבאות:
+Welcome to ACNE Employment. Why work for the best when you can work like the rest	ברוכים הבאים לתעסוקת אקנה. למה לעבוד אצל הטובים כשאפשר לעבוד כמו כולם
+Welcome to ACNE Employment. We'll either find you a job, or we won't	ברוכים הבאים לתעסוקת אקנה. או שנמצא לך עבודה, או שלא
+Welcome to ACNE Employment, where your skills and our expertise add up to disappointment!	ברוכים הבאים לתעסוקת אקנה, שבה הכישורים שלך והמומחיות שלנו מסתכמים באכזבה!
+Welcome to ACNE Employment, where every lost job is a blemish on your resume!	ברוכים הבאים לתעסוקת אקנה, שבה כל עבודה שאבדה היא פצעון בקורות החיים!
+Welcome to ACNE Employment. We'll get you a job no matter what it costs you!	ברוכים הבאים לתעסוקת אקנה. נשיג לך עבודה, לא משנה כמה זה יעלה לך!
+Welcome to ACNE Employment, where your resume zits in our files!	ברוכים הבאים לתעסוקת אקנה, שבה קורות החיים שלך מעלים פצעונים בתיקים שלנו!
+Welcome to ACNE Employment. No matter how bad your skills are, we have a job to match!	ברוכים הבאים לתעסוקת אקנה. לא משנה כמה גרועים הכישורים שלך, יש לנו עבודה בהתאם!
+#
+# --- rent office
+No time is left to relax	לא נשאר זמן למנוחה
+Pay rent for 1 month	לשלם שכירות לחודש
+Ask For More Time	לבקש עוד זמן
+Rent Low-Cost Apartment	לשכור דירה זולה
+Rent Security Apartment	לשכור דירה מאובטחת
+Pay Garnishment Balance	לשלם את יתרת העיקול
+Welcome to the Rent Office. Don't snivel. Just pay your rent and leave	ברוכים הבאים למשרד השכירות. בלי בכיינות. שלמו שכירות ולכו
+Welcome to the Rent Office. The rent is high, but where else can you get so little for so much	ברוכים הבאים למשרד השכירות. השכירות גבוהה, אבל איפה עוד תקבלו כל כך מעט בכל כך הרבה
+Welcome to the Rent Office. We don't charge any extra rent for the cockroaches	ברוכים הבאים למשרד השכירות. על הג'וקים אנחנו לא גובים תוספת
+Welcome to the Rental Office. No waterbeds, pets or velvet toreador paintings, please	ברוכים הבאים למשרד השכירות. בלי מיטות מים, חיות מחמד או ציורי טוריאדור מקטיפה, בבקשה
+Welcome to the Rental Office. Where Sunday is Double Rent Increase Day!	ברוכים הבאים למשרד השכירות. ביום ראשון השכירות עולה כפול!
+Welcome to the Rental Office. Our closets are so roomy, you'll never want to come out!	ברוכים הבאים למשרד השכירות. הארונות שלנו כל כך מרווחים שלא תרצו לצאת מהם!
+Welcome to the Rental Office. Our security apartments feature 24-hour eunuch guards!	ברוכים הבאים למשרד השכירות. בדירות המאובטחות שלנו יש שומרים סריסים 24 שעות!
+Welcome to the Rental Office. Come in and meet your slumlo...I mean, your landlord!	ברוכים הבאים למשרד השכירות. בואו להכיר את בעל החורבה... כלומר, בעל הבית!
+Just a few rules: no pets, no children, no smoking, no parties, and no jogging in the halls	רק כמה כללים: בלי חיות, בלי ילדים, בלי עישון, בלי מסיבות ובלי ריצה במסדרונות
+You'll love it! 24-hour security, spa, exercise room and free parking for BMWs	תאהבו את זה! אבטחה 24 שעות, ספא, חדר כושר וחניה חינם ל-BMW
+A wise choice. Our other building has just been condemned	בחירה נבונה. הבניין השני שלנו נגזר זה עתה להריסה
+Oh, good! You'll fit right in...EVERYBODY there has an attitude	יופי! תשתלב מצוין... לכולם שם יש גישה
+We've just put in a sun deck for your slow-roasting pleasure	הרגע הוספנו מרפסת שמש לצלייה איטית להנאתכם
+Ah. Well, I expect you'll find the neighborhood quite challenging	אה. ובכן, אני מניח שהשכונה תהיה מאתגרת למדי
+Oh. Well, hopefully you'll still be around at rent time	אה. טוב, נקווה שעוד תהיה בסביבה כשיגיע זמן השכירות
+Of course, that comes furnished with a disgusting old chair. Enjoy!	כמובן, הדירה מגיעה מרוהטת בכיסא ישן ומגעיל. תהנו!
+You'll be happy to know that we just put a fresh battery in the smoke detector	תשמחו לדעת שהרגע שמנו סוללה חדשה בגלאי העשן
+Just remember, the cockroaches are more frightened of you than you are of them	רק זכרו, הג'וקים מפחדים מכם יותר משאתם מפחדים מהם
+Thank you. See you soon	תודה. נתראה בקרוב
+Come back again soon	חזרו בקרוב
+I'm here for all of your renting needs	אני כאן לכל צורכי השכירות שלכם
+Please tell all your rich friends about m... I mean us	ספרו לכל החברים העשירים שלכם עליי... כלומר עלינו
+Thank You, but please don't call me at 4 in the morning again	תודה, אבל בבקשה אל תתקשר אליי שוב בארבע בבוקר
+You do not have enough cash	אין לך מספיק מזומן
+Sure, you can pay your rent next week	בטח, אפשר לשלם את השכירות בשבוע הבא
+Sorry, your rent must be paid now	מצטער, את השכירות צריך לשלם עכשיו
+I already told you Yes!	כבר אמרתי לך כן!
+I'll say it again. NO!	אגיד את זה שוב. לא!
+WhaddoI look like? A bank?. Get outa here!	מה אני נראה לך? בנק? צא מכאן!
+If I told you once, I've told you a thousand times. NO!!!!!	אם אמרתי לך פעם אחת, אמרתי אלף פעמים. לא!!!!!
+Click on that button one more time and I'll break your finger	תלחץ על הכפתור הזה עוד פעם ואשבור לך את האצבע
+You don't need an extension	אתה לא צריך הארכה
+You already live at the low-cost housing	אתה כבר גר בדיור הזול
+Your %d weeks of prepaid rent on your Security Apartment are non-refundable. Are you sure that you want to rent a Low Cost Apartment at this time?	%d שבועות השכירות ששילמת מראש על הדירה המאובטחת לא יוחזרו. בטוח שאתה רוצה לשכור עכשיו דירה זולה?
+OK. It was your decision	בסדר. זו הייתה ההחלטה שלך
+Smart move, buddy	מהלך חכם, חבר
+You already live at the security apartments	אתה כבר גר בדירות המאובטחות
+Your %d weeks of prepaid rent on your Low Cost Apartment are non-refundable. Are you sure that you want to rent a Security Apartment at this time?	%d שבועות השכירות ששילמת מראש על הדירה הזולה לא יוחזרו. בטוח שאתה רוצה לשכור עכשיו דירה מאובטחת?
+Please, pay your rent promptly from now on	בבקשה, מעכשיו שלם את השכירות בזמן
+#
+# --- Black's Market
+Welcome to Black's Market. Where quality and service are unherd of and you will stand in line forever	ברוכים הבאים לשוק של בלאק. כאן איכות ושירות הם דבר לא מוכר, ותעמדו בתור לנצח
+Welcome to Black's Market, where you can grow old in our checkout lines	ברוכים הבאים לשוק של בלאק, שבו אפשר להזדקן בתורים לקופה
+Welcome to Black's Market. Our meats are a cut above!	ברוכים הבאים לשוק של בלאק. הבשר שלנו חתוך מעל כולם!
+Welcome to Black's Market. You can't beat our eggs!	ברוכים הבאים לשוק של בלאק. את הביצים שלנו אי אפשר לנצח!
+Welcome to Black's Market, where every day is Double Coupon Day!	ברוכים הבאים לשוק של בלאק, שבו כל יום הוא יום קופונים כפול!
+Welcome to Black's Market. Look for our special on day-old sushi!	ברוכים הבאים לשוק של בלאק. חפשו את המבצע על סושי של אתמול!
+Welcome to Black's Market. Open all day and night for your binging pleasure!	ברוכים הבאים לשוק של בלאק. פתוח יומם ולילה לזלילה שלכם!
+Welcome to Black's Market. Lowest prices in town on pickled octopus!	ברוכים הבאים לשוק של בלאק. המחירים הזולים בעיר לתמנון כבוש!
+Welcome to Black's Market. Hey, check out those melons!	ברוכים הבאים לשוק של בלאק. היי, תראו איזה מלונים!
+Welcome to Black's Market. Our butcher loves to stop and chew the fat!	ברוכים הבאים לשוק של בלאק. הקצב שלנו אוהב לעצור ולפטפט!
+Welcome to Black's Market. Don't bypass our artichoke hearts!	ברוכים הבאים לשוק של בלאק. אל תדלגו על לבבות הארטישוק שלנו!
+Welcome to Black's Market. This time, please don't take home the shopping cart	ברוכים הבאים לשוק של בלאק. הפעם, בבקשה אל תיקחו הביתה את העגלה
+Welcome to Black's Market, the grosser grocer!	ברוכים הבאים לשוק של בלאק, המכולת הכי מגעילה!
+Welcome to Black's Market. Our Swiss Cheese is made from Hole Milk!	ברוכים הבאים לשוק של בלאק. הגבינה השוויצרית שלנו עשויה מחלב מלא חורים!
+Mr. Schwader to 6 for check approval...Mr. Schwader to 6 for check approval	מר שוודר לקופה 6 לאישור צ'ק... מר שוודר לקופה 6 לאישור צ'ק
+Would you like fries with that? Oops, sorry, I usedta work at Monolith Burger	רוצה צ'יפס עם זה? אופס, סליחה, פעם עבדתי במונוליט בורגר
+Just so you know, we saw you eating those grapes in the produce section	רק שתדע, ראינו אותך אוכל את הענבים במחלקת הירקות
+Cookies, ice cream and soda? Any REAL food in that shopping cart?	עוגיות, גלידה וסודה? יש בעגלה הזאת אוכל אמיתי?
+If you wanna write a check, I need 8 forms of ID and a blood sample	אם אתה רוצה לשלם בצ'ק, אני צריך 8 תעודות מזהות ובדיקת דם
+You had eleven items, not ten. Next time, use the right aisle	היו לך אחד עשר פריטים, לא עשרה. בפעם הבאה, לך לקופה הנכונה
+One of your eggs is broken. Better use it quickly	אחת הביצים שלך שבורה. כדאי להשתמש בה מהר
+Price check, please...a 5-pound box of Quintuple-Stuff Sandwich Cookies!	בדיקת מחיר בבקשה... קופסת עוגיות סנדוויץ' במילוי מחומש, 2 קילו!
+Have you tried the Deli Department's Cheezy Sweet 'n Saurkraut Salad?	טעמת את סלט כרוב חמוץ-מתוק עם גבינה ממחלקת המעדנייה?
+Thank You. See you next time	תודה. נתראה בפעם הבאה
+Will that be paper or plastic?	שקית נייר או ניילון?
+Have a Good day	יום טוב
+We appreciate your business	אנחנו מעריכים את הקנייה שלך
+It's clear that you are a person who knows how to shop	ברור שאתה אדם שיודע לקנות
+I'm happy to see that you're well today	שמח לראות שאתה בסדר היום
+Thank you for shopping at Black's Market	תודה שקנית בשוק של בלאק
+Next time, give peas a chance!	בפעם הבאה, תן לאפונה צ'אנס!
+No tipping, please!	בלי טיפים, בבקשה!
+Can we help you out to your marble?	לעזור לך עם הקניות עד הגולה שלך?
+Come back for all your grocery needs!	חזרו אלינו לכל צורכי המכולת!
+Say, two more trips and you'll have enough stamps!	עוד שני ביקורים ויהיו לך מספיק בולים!
+Hope you didn't buy any of those recalled mushrooms last week!	מקווה שלא קנית מהפטריות שהוחזרו בשבוע שעבר!
+Next time, don't dent the cans and expect a discount	בפעם הבאה, אל תמעך את הפחיות ותצפה להנחה
+Your selection of food indicates you're compensating for a lack of affection	בחירת המזון שלך מעידה שאתה מפצה על חוסר חיבה
+Please be more careful with the mayonnaise in Aisle 7 next time	בפעם הבאה, בבקשה זהירות עם המיונז במעבר 7
+Arugla, Raddichio and Belgian Endive? What a yuppie!	ארוגולה, רדיקיו ואנדיב בלגי? איזה יאפי!
+I'm sorry we were out of those little corns this week	מצטער שנגמרו לנו התירסים הקטנים השבוע
+Would you like to be a checker? OK. YOU'RE A RED ONE	רוצה להיות דמקה? בסדר. אתה אדומה
+Look in our Italian Pet Food section for Dog Ciao!	חפשו במחלקת מזון החיות האיטלקי את דוג צ'או!
+If you can find lower prices on groceries, you're playing a different game	אם מצאת מחירים זולים יותר במכולת, אתה משחק במשחק אחר
+Check out our corn...you'll love to nibble our ears	תראו את התירס שלנו... תאהבו לנשנש
+Our celery stalks at midnight	הסלרי שלנו אורב בחצות
+Meet our dairy department managers, Sam 'n Ella!	הכירו את מנהלי מחלקת החלב שלנו, סם ואלה!
+No time to read the newspaper	אין זמן לקרוא עיתון
+#
+# --- bank
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. We take very little interest in you	ברוכים הבאים לבנק פ.י.ג.י. - הריבית שלנו בך נמוכה מאוד
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. You'll always find yourself a loan here!	ברוכים הבאים לבנק פ.י.ג.י. - כאן תמיד תמצאו הלוואה!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. No charge for deposits!	ברוכים הבאים לבנק פ.י.ג.י. - הפקדות בלי עמלה!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Tuesdays are Double Dollar Days!	ברוכים הבאים לבנק פ.י.ג.י. - בימי שלישי כל דולר כפול!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Have you gotten your free Toast Point Tongs?	ברוכים הבאים לבנק פ.י.ג.י. - כבר קיבלתם את מלקחי הטוסט במתנה?
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Our fixed-rate CDs spin at 1500 RPM!	ברוכים הבאים לבנק פ.י.ג.י. - הפיקדונות שלנו מסתובבים ב-1500 סל"ד!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. This little P.I.G.G.Y. plays the market!	ברוכים הבאים לבנק פ.י.ג.י. - החזרזיר הקטן הזה משחק בבורסה!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Where we do Savings and Loans without a crisis!	ברוכים הבאים לבנק פ.י.ג.י. - חיסכון והלוואות בלי משבר!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Our loan officers are real Yes-men!	ברוכים הבאים לבנק פ.י.ג.י. - פקידי ההלוואות שלנו תמיד אומרים כן!
+Welcome to the Pacific International Grand Gratuity Yield -P.I.G.G.Y.- Bank. Our San Andreas branch is in default!	ברוכים הבאים לבנק פ.י.ג.י. - הסניף שלנו בסן אנדראס בחדלות פירעון!
+Thank you for depositing on us	תודה שהפקדת אצלנו
+You do not have any cash to deposit	אין לך מזומן להפקיד
+There is always a penalty for early withdrawal	על משיכה מוקדמת תמיד יש קנס
+You do not have any savings	אין לך חסכונות
+Thank You for your payment	תודה על התשלום
+You don't have a loan	אין לך הלוואה
+Sure, I can extend your loan for another $%d Would you like to do that?	בטח, אפשר להאריך את ההלוואה ב-$%d נוספים. רוצה?
+Sure, you can have a loan for $%d Would you like to do that?	בטח, אפשר לקבל הלוואה של $%d. רוצה?
+Here is your %d, payable the 1st of each month	הנה ה-%d שלך, לתשלום ב-1 לכל חודש
+Well then, come back and see us any time	טוב אז, בוא לבקר אותנו מתי שתרצה
+I'm terribly sorry, but you need more money or a better job in order to get an extension on your loan	מצטער מאוד, אבל כדי לקבל הארכה להלוואה צריך יותר כסף או עבודה טובה יותר
+I'm terribly sorry, but you need more money or a better job in order to get a loan	מצטער מאוד, אבל כדי לקבל הלוואה צריך יותר כסף או עבודה טובה יותר
+No time is left to apply for a loan	לא נשאר זמן לבקש הלוואה
+No time is left to see the broker	לא נשאר זמן ללכת לברוקר
+#
+# --- factory
+Welcome to the Factory. We will overwork you, under pay you, and expect you to take it with a smile	ברוכים הבאים למפעל. נעביד אותך יותר מדי, נשלם לך פחות מדי, ונצפה שתחייך
+Welcome to the Factory. Where else can you have this much fun and get paid for it too	ברוכים הבאים למפעל. איפה עוד אפשר ליהנות ככה ולקבל על זה כסף
+Welcome to the Factory. Where the work is hard, the pay is low, and the conditions are miserable	ברוכים הבאים למפעל. העבודה קשה, השכר נמוך והתנאים עלובים
+Welcome to the Factory. Thursday is Double Workman's Compensation Day!	ברוכים הבאים למפעל. יום חמישי הוא יום פיצויי עבודה כפולים!
+Welcome to the Factory. We pay Top Dollar for Blue Collar!	ברוכים הבאים למפעל. אנחנו משלמים הכי הרבה לצווארון הכחול!
+Welcome to the Factory. No sweat...no paycheck!	ברוכים הבאים למפעל. בלי זיעה... בלי משכורת!
+Welcome to the Factory. Where money is our most important product	ברוכים הבאים למפעל. הכסף הוא המוצר הכי חשוב שלנו
+Welcome to the Factory. Please wear your safety helmet during scheduled inspections	ברוכים הבאים למפעל. בבקשה חבשו קסדה בזמן ביקורות מתוכננות
+#
+# --- Hi-Tech U
+Welcome to Hi-Tech U. We will learn you for the future	ברוכים הבאים להיי-טק U. אנחנו נלמד אותך לעתיד
+Welcome to Hi-Tech U. We'll learn you to talk English good!	ברוכים הבאים להיי-טק U. נלמד אותך לדבר עברית טוב!
+Welcome to Hi-Tech U. Our Geology classes will put rocks in your head!	ברוכים הבאים להיי-טק U. שיעורי הגאולוגיה שלנו ישימו לך אבנים בראש!
+Welcome to Hi-Tech U, where you'll never be bored of education!	ברוכים הבאים להיי-טק U, שבה לעולם לא תשתעמם מהשכלה!
+Welcome to Hi-Tech U. Enroll now for the third trimester!	ברוכים הבאים להיי-טק U. הירשמו עכשיו לטרימסטר השלישי!
+Welcome to Hi-Tech U. All our professors have tweed jackets with elbow patches!	ברוכים הבאים להיי-טק U. לכל הפרופסורים שלנו יש מעיל טוויד עם טלאים במרפקים!
+Welcome to Hi-Tech U. Our diplomas are genuine cheepskin!	ברוכים הבאים להיי-טק U. התעודות שלנו מעור זול אמיתי!
+Welcome to Hi-Tech U. Our alumni haven't complained yet!	ברוכים הבאים להיי-טק U. הבוגרים שלנו עוד לא התלוננו!
+Welcome to Hi-Tech U. Next semester is Double Credits Semester!	ברוכים הבאים להיי-טק U. בסמסטר הבא נקודות זכות כפולות!
+Welcome to Hi-Tech U. When it comes to education, we will NOT be undersold!	ברוכים הבאים להיי-טק U. כשזה מגיע להשכלה, אף אחד לא זול מאיתנו!
+Welcome to Hi-Tech U. Already got your BA and MBA? We'll give you the third degree!	ברוכים הבאים להיי-טק U. כבר יש לך תואר ראשון ושני? נעשה לך חקירה בדרגה שלישית!
+Welcome to Hi-Tech U. No matriculating in the dormitories, please!	ברוכים הבאים להיי-טק U. בלי התבגרויות במעונות, בבקשה!
+Welcome to Hi-Tech U. Enroll now for our fifth quarter!	ברוכים הבאים להיי-טק U. הירשמו עכשיו לרבעון החמישי!
+Welcome to Hi-Tech U. You come in with a skull full of mush and you leave thinking like a shyster	ברוכים הבאים להיי-טק U. נכנסים עם ראש מלא דייסה ויוצאים חושבים כמו נוכל
+Welcome to Hi-Tech U. Draw Kenny and YOU could win an art scholarship!	ברוכים הבאים להיי-טק U. ציירו את קני ואולי תזכו במלגה לאמנות!
+Welcome to Hi-Tech U. Check out our Job Displacement Service!	ברוכים הבאים להיי-טק U. בקרו בשירות העקירה מעבודה שלנו!
+Welcome to Hi-Tech U. Need financial assistance? What do we look like, a bank?	ברוכים הבאים להיי-טק U. צריכים עזרה כלכלית? מה אנחנו נראים, בנק?
+Welcome to Hi-Tech U, where one good term deserves another!	ברוכים הבאים להיי-טק U, שבה סמסטר טוב גורר סמסטר טוב!
+Welcome to Hi-Tech U. The CIA recruitment center's right here on campus!	ברוכים הבאים להיי-טק U. מרכז הגיוס של ה-CIA נמצא כאן בקמפוס!
+Welcome to Hi-Tech U. Meet Ed Fiz, our Phys Ed instructor!	ברוכים הבאים להיי-טק U. הכירו את אד פיז, המדריך שלנו לחינוך גופני!
+Welcome to Hi-Tech U. CPA degrees or 65% x 1.2146/5ths of your money back!	ברוכים הבאים להיי-טק U. תואר ברואה חשבון או 65% x 1.2146/5 מהכסף בחזרה!
+Welcome to Hi-Tech U. Where our campus ROTC stands for Really Obnoxious Teenage Civilians!	ברוכים הבאים להיי-טק U. בקמפוס שלנו ROTC פירושו בני נוער מעצבנים במיוחד!
+No time is left to go to class	לא נשאר זמן ללכת לשיעור
+You need to enroll in a class first	קודם צריך להירשם לקורס
+Perhaps next year we will have more classes to offer to you	אולי בשנה הבאה יהיו לנו עוד קורסים להציע לך
+Your enrollment fee of $%d has been accepted	דמי ההרשמה בסך $%d התקבלו
+The enrollment fee is $%d. Would you like to enroll?	דמי ההרשמה הם $%d. רוצה להירשם?
+Thank You. You may select the class of your choice	תודה. אפשר לבחור את הקורס שתרצה
+Perhaps at another time	אולי בפעם אחרת
+#
+# --- Socket City
+Welcome to Socket City. If you paid full price, you must've bought it here!	ברוכים הבאים לסוקט סיטי. אם שילמתם מחיר מלא, בטח קניתם כאן!
+Welcome to Socket City. You're just in time for our Pre-Arbor Day Value Fest!	ברוכים הבאים לסוקט סיטי. הגעתם בדיוק לפסטיבל המבצעים של ערב ט"ו בשבט!
+Welcome to Socket City. Apply for our Revolving Algorithmic Usury Credit Line!	ברוכים הבאים לסוקט סיטי. הגישו בקשה לקו האשראי המסתובב שלנו בריבית קצוצה!
+Welcome to Socket City. Our salespeople are here to help you...spend!	ברוכים הבאים לסוקט סיטי. אנשי המכירות שלנו כאן כדי לעזור לכם... לבזבז!
+Welcome to Socket City. Special today on useless Yuppie electronic gadgets!	ברוכים הבאים לסוקט סיטי. מבצע היום על גאדג'טים מיותרים ליאפים!
+Welcome to Socket City. We only charge 10% over list price!	ברוכים הבאים לסוקט סיטי. אנחנו גובים רק 10% מעל המחירון!
+Welcome to Socket City. Go ahead and TRY to talk us down	ברוכים הבאים לסוקט סיטי. קדימה, נסו להתמקח איתנו
+Welcome to Socket City. Next Friday is Double Commission Day!	ברוכים הבאים לסוקט סיטי. ביום שישי הבא עמלה כפולה!
+Welcome to Socket City. Come to our Moonlight Madness sale. 20% off if you wear your pajamas!	ברוכים הבאים לסוקט סיטי. בואו למבצע טירוף הירח. 20% הנחה למי שבא בפיג'מה!
+Welcome to Socket City. Values direct from the factory to the jobber to the wholesaler to us to YOU!	ברוכים הבאים לסוקט סיטי. ישר מהמפעל לסוכן לסיטונאי אלינו ואליכם!
+Welcome to Socket City, Home of High Pressure Sales!	ברוכים הבאים לסוקט סיטי, הבית של המכירות בלחץ!
+Welcome to Socket City, where Quality meets its match!	ברוכים הבאים לסוקט סיטי, שבה האיכות פוגשת את יריבתה!
+Welcome to Socket City, where you get less for more!	ברוכים הבאים לסוקט סיטי, שבה מקבלים פחות ביותר!
+Welcome to Socket City, where our Service Department never sleeps, eats or bathes!	ברוכים הבאים לסוקט סיטי, שבה מחלקת השירות לא ישנה, לא אוכלת ולא מתרחצת!
+Welcome to Socket City, where the customer is always ripe!	ברוכים הבאים לסוקט סיטי, שבה הלקוח תמיד בשל!
+Welcome to Socket City. Where everything quits working the day after the warranty expires	ברוכים הבאים לסוקט סיטי. כאן הכול מתקלקל יום אחרי שהאחריות נגמרת
+Thank You very much	תודה רבה
+I'm sure that you will be very happy with your purchase	אני בטוח שתהיה מרוצה מאוד מהקנייה
+Thanks. You will have many years of trouble free service	תודה. יהיו לך שנים רבות של שירות בלי תקלות
+Thank you for visiting Socket City	תודה שביקרת בסוקט סיטי
+You sure know a deal when you see one	אתה בטוח מזהה מציאה כשאתה רואה אחת
+Come and see us again, anytime	בוא לבקר אותנו שוב, מתי שתרצה
+Thank You. Let me know how you enjoy it	תודה. ספר לי איך נהנית
+Perhaps I can interest you in something else	אולי אוכל לעניין אותך במשהו נוסף
+Have you seen our vacuum cleaners? They really suck!	ראית את שואבי האבק שלנו? הם ממש שואבים!
+Would you like the $200 Extended Service Contract with that?	תרצה עם זה חוזה שירות מורחב ב-$200?
+You'll want the $150 Factory Extension Warranty with that, right?	תרצה עם זה הרחבת אחריות יצרן ב-$150, נכון?
+Can we interest you in the $300 1-Year Lifetime Replacement Guarantee?	אפשר לעניין אותך באחריות החלפה לכל החיים לשנה ב-$300?
+How about a $250 Extended Factory Service Warranty Replacement Guarantee Contract Agreement Deal with that?	מה דעתך על הסכם חוזה ערבות החלפה לאחריות שירות יצרן מורחבת ב-$250?
+If you ever require service, you know where to go!	אם תצטרך פעם שירות, אתה יודע לאן ללכת!
+Of course, for another $75, you could have gotten the next model up	כמובן, בעוד $75 יכולת לקבל את הדגם הבא
+Our free installation is only $45 today!	ההתקנה החינמית שלנו עולה היום רק $45!
+Sorry, we only had a floor sample left, but trust me, it's in perfect condition	מצטער, נשאר לנו רק דגם תצוגה, אבל תאמין לי, הוא במצב מושלם
+Remember, we offer free delivery anywhere within the game!	זכור, אנחנו מציעים משלוח חינם לכל מקום במשחק!
+Do you smell something burning? Oh, it's that cash in your pocket!	מריח משהו נשרף? אה, זה הכסף בכיס שלך!
+Now that didn't hurt a bit, did it?	נו, זה בכלל לא כאב, נכון?
+Notice how we ignore anybody who's browsing the under-$200 items?	שמת לב שאנחנו מתעלמים ממי שמסתכל על פריטים מתחת ל-$200?
+Since you're spending, how about replacing your car stereo with an $800 Kerplunkett?	אם כבר אתה מבזבז, מה דעתך להחליף את הרדיו ברכב בקרפלנקט ב-$800?
+Should we call the paramedics to treat your wallet for shock?	להזמין פרמדיקים לטפל בארנק שלך בהלם?
+Care to go double-or-nothing for that 92 inch Projection TV?	רוצה כפול או כלום על מקרן הטלוויזיה בגודל 92 אינץ'?
+Now, if I can steer you towards some of our higher-margin products	עכשיו, אם אוכל להפנות אותך למוצרים הרווחיים יותר שלנו
+Didn't you have your eye on that complete Home Videotape Production Studio?	לא שמת עין על אולפן הפקת הווידאו הביתי המלא?
+If you're not completely satisfied, we'll be glad to give you partial credit	אם אתה לא מרוצה לגמרי, נשמח לתת לך זיכוי חלקי
+We're members of the Bait 'n Switch(TM) Retailer's Association!	אנחנו חברים באיגוד הקמעונאים פתיון-והחלפה(TM)!
+We finance 90 Days, Same as Bankruptcy!	מימון ל-90 יום, בדיוק כמו פשיטת רגל!
+With every purchase over $5200, we're giving away free Chapter 11 Auto-Filers!	עם כל קנייה מעל $5200 מקבלים מתנה: מגיש אוטומטי לפשיטת רגל!
+Please be aware that our Extended Service Contract excludes parts and labor	שים לב שחוזה השירות המורחב שלנו לא כולל חלקים ועבודה
+#
+# --- QT Clothing
+Welcome to QT Clothing. We will sell you anything, no matter how bad it looks	ברוכים הבאים לביגוד QT. נמכור לך הכול, לא משנה כמה רע זה נראה
+Welcome to QT Clothing. Meet our tailor, Howie Fitzhugh!	ברוכים הבאים לביגוד QT. הכירו את החייט שלנו, האווי פיצהיו!
+Welcome to QT Clothing. Our ties don't bind and our belts are a cinch	ברוכים הבאים לביגוד QT. העניבות שלנו לא חונקות והחגורות קלות כמו קליפת שום
+Welcome to QT Clothing. We have legal briefs and law suits	ברוכים הבאים לביגוד QT. יש לנו תחתונים משפטיים וחליפות תביעה
+Welcome to QT Clothing, open 24 hours...we never clothes!	ברוכים הבאים לביגוד QT, פתוחים 24 שעות... אנחנו אף פעם לא סוגרים!
+Welcome to QT Clothing. Thursday is Double Shoulder Pad Day!	ברוכים הבאים לביגוד QT. ביום חמישי כריות כתפיים כפולות!
+Welcome to QT Clothing. Wear our clothes and you'll be a QT, too!	ברוכים הבאים לביגוד QT. לבשו את הבגדים שלנו ותהיו חמודים גם אתם!
+Welcome to QT Clothing. The only place in the world where you can buy just 1 pant!	ברוכים הבאים לביגוד QT. המקום היחיד בעולם שבו אפשר לקנות רק מכנס אחד!
+Welcome to QT Clothing. Try on our soothing new Medicated Tux!	ברוכים הבאים לביגוד QT. נסו את הטוקסידו הרפואי המרגיע החדש שלנו!
+My! Don't WE look nice today!	וואו! איזה יפים אנחנו היום!
+It's the real you	זה ממש אתה
+Spiffy	מהמם
+Faaabulous!!!	פאאאנטסטי!!!
+Our clothes are of the highest quality	הבגדים שלנו באיכות הגבוהה ביותר
+Have a wonderful day!	שיהיה לך יום נפלא!
+Lookin' good!	נראה טוב!
+You can't go wong at QT	אי אפשר לטעות בQT
+Perhaps you should stock up now while the prices are so reasonable	אולי כדאי להצטייד עכשיו כשהמחירים כל כך סבירים
+With your figure, perhaps you should consider going to a tent maker	עם הגזרה שלך, אולי כדאי לשקול לפנות ליצרן אוהלים
+Oooh, you look good enough to eat!	אווו, אתה נראה טוב לאכול!
+Don't you just love the new spring fashions? Tres magnifique!	לא מתים על אופנת האביב החדשה? טרה מניפיק!
+It's nice like that, just a tad tight around the bottom	זה יפה ככה, רק טיפה צמוד מאחור
+Good choice...rayon is back in this year!	בחירה טובה... ריון חזר השנה!
+Now what are you going to do about your HAIR?	עכשיו מה תעשה עם השיער?
+Don't forget to accessorize!	אל תשכח אקססוריז!
+Nice! It really accentuates those pectorals	יפה! זה ממש מבליט את שרירי החזה
+You know, a little tummy tuck would take care of that slight pucker in back	אתה יודע, מתיחת בטן קטנה תסדר את הקמט הקטן מאחור
+Stop slouching and it won't crease across the torso	תפסיק להתכופף וזה לא יתקמט על הגוף
+With a physique like yours, you could wear ANYthing!	עם גוף כמו שלך, אפשר ללבוש הכול!
+Let me mention just two little words. Lipo. Suction	רק שתי מילים קטנות. שאיבת. שומן
+#
+# --- Monolith Burgers
+Welcome to Monolith Burger. Our Assistant Manager knows the Heimlich Manuever!	ברוכים הבאים למונוליט בורגר. סגן המנהל שלנו יודע לעשות היימליך!
+Welcome to Monolith Burger. Next week, come meet Monny the Burger Clown!	ברוכים הבאים למונוליט בורגר. בשבוע הבא בואו לפגוש את מוני ליצן הבורגר!
+Welcome to Monolith Burger. You just missed Monny the Burger Clown!	ברוכים הבאים למונוליט בורגר. בדיוק פספסתם את מוני ליצן הבורגר!
+Welcome to Monolith Burger. Buy 'em by the bushel!	ברוכים הבאים למונוליט בורגר. קנו אותם בארגזים!
+Welcome to Monolith Burger. Our food is untouched by human hands, only by teenagers	ברוכים הבאים למונוליט בורגר. ידי אדם לא נוגעות באוכל שלנו, רק בני נוער
+Welcome to Monolith Burger. Cleanest restrooms in the game!	ברוכים הבאים למונוליט בורגר. השירותים הכי נקיים במשחק!
+Welcome to Monolith Burger. Free bibs with every order of Lobster Nuggets!	ברוכים הבאים למונוליט בורגר. סינר חינם עם כל מנת נאגטס לובסטר!
+Welcome to Monolith Burger. Try a box of Chocolate-Like(R) Cookie Shards!	ברוכים הבאים למונוליט בורגר. נסו קופסת שברי עוגיות דמוי-שוקולד(R)!
+Welcome to Monolith Burger. Have you played our Guess the Chicken Part Game?	ברוכים הבאים למונוליט בורגר. שיחקתם במשחק נחשו את חלק העוף?
+Welcome to Monolith Burger. Special orders will take an extra 45 minutes	ברוכים הבאים למונוליט בורגר. הזמנות מיוחדות ייקחו עוד 45 דקות
+Welcome to Monolith Burger. Our soup today is Cream of Taco	ברוכים הבאים למונוליט בורגר. מרק היום: קרם טאקו
+Welcome to Monolith Burgers. Home of the Toemain Express and the Stomach Pump special	ברוכים הבאים למונוליט בורגרס. הבית של אקספרס ההרעלה ומבצע שטיפת הקיבה
+Welcome to Monolith Burgers, where we use only 100% Pure Extruded Beeflike Product!	ברוכים הבאים למונוליט בורגרס, רק 100% מוצר דמוי-בקר טהור!
+Welcome to Monolith Burgers, where even the wrappers have wrappers!	ברוכים הבאים למונוליט בורגרס, שבו אפילו לעטיפות יש עטיפות!
+Welcome to Monolith Burgers, where our Food(TM) is patented!	ברוכים הבאים למונוליט בורגרס, שבו האוכל(TM) שלנו רשום כפטנט!
+Welcome to Monolith Burgers. Our buns are the softest!	ברוכים הבאים למונוליט בורגרס. הלחמניות שלנו הכי רכות!
+Welcome to Monolith Burgers, where our fat is always freshly rendered!	ברוכים הבאים למונוליט בורגרס, שבו השומן שלנו תמיד טרי!
+Welcome to Monolith Burgers, where quality eats are in the bag!	ברוכים הבאים למונוליט בורגרס, שבו אוכל איכותי כבר בשקית!
+Welcome to Monolith Burgers, where our drinks have twice the ice!	ברוכים הבאים למונוליט בורגרס, שבו בשתייה יש פי שניים קרח!
+Welcome to Monolith Burgers, where our burgers come from contented cows!	ברוכים הבאים למונוליט בורגרס, שבו הבורגרים שלנו מפרות מרוצות!
+Will that be all?	זה הכול?
+Would you like fries with that?	רוצה צ'יפס עם זה?
+Something else with that?	עוד משהו עם זה?
+Take some home for your family too	קח גם הביתה למשפחה
+Have a nice day	יום נעים
+Sounds delicious	נשמע טעים
+Will that be cash or charge? Tee hee	מזומן או אשראי? חי חי
+Well, aren't WE happy today	נו, איזה שמחים אנחנו היום
+Would you like some Thousand Isla...I mean, Secret Sauce, with that?	רוצה קצת אלף האי... כלומר, רוטב סודי, עם זה?
+Does your Mother know you're eating here?	אמא שלך יודעת שאתה אוכל כאן?
+Incidentally, we also sell used hairnets	דרך אגב, אנחנו מוכרים גם רשתות שיער משומשות
+Our pure beef burgers have half the soybeans of the other leading brands!	בבורגרים שלנו יש חצי מהסויה של המותגים המובילים!
+Would you like some deep-fried potatoes and deep-fried pie with your deep-fried sandwich?	תרצה תפוחי אדמה מטוגנים ופאי מטוגן עם הכריך המטוגן?
+This week only: buy two burgers and get the shakes for free!	השבוע בלבד: קנה שני בורגרים וקבל בחילה בחינם!
+You can save 45 minutes by flushing that right now	אפשר לחסוך 45 דקות אם תוריד את זה באסלה עכשיו
+Mmmmm...that looks almost good enough to eat!	ממממ... זה נראה כמעט טוב מספיק לאכילה!
+We now make our sandwiches from 100% biodegradable material!	הכריכים שלנו עשויים עכשיו מ-100% חומר מתכלה!
+Is that 'to go,' to eat here, or neither?	זה לקחת, לאכול כאן, או אף אחד מהם?
+Please dispose of trash properly!	בבקשה זרקו את הזבל כמו שצריך!
+Would you like a Prepubescent Irradiated Kung Fu Tortise statuette with that?	תרצה עם זה פסלון צב קונג פו מוקרן?
+Our Manager would like you to sign a petition to abolish the Minimum Wage	המנהל שלנו רוצה שתחתום על עצומה לביטול שכר המינימום
+Did you know there's only 45 calories per french fry?	ידעת שבכל צ'יפס יש רק 45 קלוריות?
+Next to disposable diapers, we're the most familiar sight on the highways!	אחרי חיתולים חד-פעמיים, אנחנו המראה הכי מוכר בכבישים!
+Have you tried our new Breakfast Chile Releno?	טעמת את צ'ילה רלנו לארוחת בוקר החדש שלנו?
+This is my first job, so forgive me if I totally mess up your order	זו העבודה הראשונה שלי, אז סלח לי אם אני הורס לך את ההזמנה
+Try our new Licorice 'n Liver Shake!	נסו את שייק הליקוריץ והכבד החדש שלנו!
+Did you want a handful of ketchup packets with that?	רצית חופן שקיות קטשופ עם זה?
+Remember, if it's a 6-lb. Beefburger, it must be a Monolith!	זכור, אם זה בורגר של 3 קילו, זה בטח מונוליט!
+Our burgers aren't broiled OR fried...they're poached!	הבורגרים שלנו לא צלויים ולא מטוגנים... הם מבושלים!
+You can find us in any town...just follow the trail of empty wrappers!	תמצאו אותנו בכל עיר... פשוט לכו בעקבות העטיפות הריקות!
+Remember...NO food is better than OUR food!	זכור... שום אוכל לא טוב יותר מהאוכל שלנו!
+Would you like to take home some complimentary advertising on a placemat?	תרצה לקחת הביתה פרסומת חינם על פלייסמט?
+Our shakes are so thick, you can't even swallow 'em!	השייקים שלנו כל כך סמיכים שאי אפשר לבלוע אותם!
+Help yourself to a piece of our new 90-foot Compressed Salad Bar!	קח לך חתיכה מבר הסלטים הדחוס החדש שלנו, 30 מטר!
+Free refills if you can finish one cup of our coffee!	מילוי חוזר חינם אם תצליח לגמור כוס אחת מהקפה שלנו!
+#
+# --- Z-Mart
+Welcome to Z-Mart. Home of low cost, low quality, and cheap help	ברוכים הבאים לזי-מארט. הבית של מחיר נמוך, איכות נמוכה ועובדים זולים
+Welcome to Z-Mart, where low prices don't always mean low quality!	ברוכים הבאים לזי-מארט, שבו מחיר נמוך לא תמיד אומר איכות נמוכה!
+Welcome to Z-Mart. Our overhead is so low, the clerks are stoop- shouldered!	ברוכים הבאים לזי-מארט. התקורה שלנו כל כך נמוכה שהפקידים כפופים!
+Welcome to Z-Mart. Our overhead is so low, we hire only midgets!	ברוכים הבאים לזי-מארט. התקורה שלנו כל כך נמוכה שאנחנו מעסיקים רק נמוכי קומה!
+Welcome to Z-Mart. If we see a line with more than 50 people waiting, we'll open another!	ברוכים הבאים לזי-מארט. אם נראה תור של יותר מ-50 איש, נפתח עוד קופה!
+Welcome to Z-Mart, where our everyday values are other stores' remainders!	ברוכים הבאים לזי-מארט, שבו המבצעים שלנו הם השאריות של חנויות אחרות!
+Welcome to Z-Mart, where shoddy merchandise comes home to roost!	ברוכים הבאים לזי-מארט, שבו סחורה עלובה חוזרת הביתה!
+Welcome to Z-Mart, where yesterday's trash is today's bargain!	ברוכים הבאים לזי-מארט, שבו הזבל של אתמול הוא המציאה של היום!
+Welcome to Z-Mart. If you can't find it here, it must be worth having!	ברוכים הבאים לזי-מארט. אם לא מצאתם את זה כאן, כנראה שזה שווה משהו!
+Welcome to Z-Mart, where Quality is something we often talk about!	ברוכים הבאים לזי-מארט, שבו איכות היא משהו שאנחנו מרבים לדבר עליו!
+Welcome to Z-Mart, where we've closed over 600 stores from coast- to-coast!	ברוכים הבאים לזי-מארט, שסגרה יותר מ-600 חנויות מחוף לחוף!
+Thank you for shopping at Z-Mart	תודה שקנית בזי-מארט
+Have a very good day!	שיהיה לך יום טוב מאוד!
+Have you checked out our red light specials?	ראית את מבצעי הנורה האדומה שלנו?
+Please visit us again soon	בקרו אותנו שוב בקרוב
+Can I have a price check on register two please!	בדיקת מחיר בקופה שתיים בבקשה!
+Come back again. We have new specials each week	חזרו שוב. יש לנו מבצעים חדשים כל שבוע
+If you want cheap, we got it	אם אתה רוצה זול, יש לנו
+Save some for our next...customer	תשאיר קצת ללקוח... הבא
+Well, you get what you pay for!	נו, מקבלים את מה שמשלמים!
+Check out our new shipment of Taiwanese microwave cozies!	תראו את המשלוח החדש של כיסויים טייוואניים למיקרוגל!
+Don't forget to look in Aisle 14 for slightly irregular automotive parts!	אל תשכחו לחפש במעבר 14 חלקי רכב פגומים קלות!
+Be sure to look for our service department...and if you find it, let us know!	חפשו את מחלקת השירות שלנו... ואם תמצאו אותה, תודיעו לנו!
+Have you noticed our 83-piece steak knife set for only $4.95?	ראית את סט סכיני הסטייק שלנו, 83 חלקים, רק $4.95?
+We're having a special on dented or scratched floppy disks...only $3.50 a box!	יש לנו מבצע על דיסקטים מעוכים או שרוטים... רק $3.50 לקופסה!
+Take a look in Aisle 22 for half-price batteries. Sorry, demo models only!	הציצו במעבר 22 לסוללות בחצי מחיר. סליחה, רק דגמי תצוגה!
+If you don't see what you're looking for, look underneath something else!	אם אתם לא רואים את מה שאתם מחפשים, חפשו מתחת למשהו אחר!
+#
+# --- Pawn Shop
+Welcome to the Pawn Shop. Nothing is too hot for us to handle	ברוכים הבאים לבית העבוט. שום דבר לא חם מדי בשבילנו
+Welcome to the Pawn Shop. Down on your luck? Save the story for someone who hasn't heard it	ברוכים הבאים לבית העבוט. אין לך מזל? שמור את הסיפור למישהו שעוד לא שמע אותו
+Welcome to the Pawn Shop. I may look mean on the outside, but I've got a heart of stone	ברוכים הבאים לבית העבוט. אולי אני נראה קשוח מבחוץ, אבל יש לי לב של אבן
+Welcome to the Pawn Shop. Why crawl to anybody else?	ברוכים הבאים לבית העבוט. למה לזחול למישהו אחר?
+Welcome to the Pawn Shop, where we pardon your beg!	ברוכים הבאים לבית העבוט, שבו סולחים לך על התחנונים!
+Welcome to the Pawn Shop. Your first stop on the way down the corporate ladder!	ברוכים הבאים לבית העבוט. התחנה הראשונה שלך בדרך למטה בסולם הארגוני!
+Welcome to the Pawn Shop. Where 'pawn' is just another word for nothing left to lose!	ברוכים הבאים לבית העבוט. כאן משכון זו רק עוד מילה לכלום שנשאר להפסיד!
+Welcome to the Pawn Shop. Please don't beg, it scuffs the carpet	ברוכים הבאים לבית העבוט. בבקשה אל תתחנן, זה משחק את השטיח
+If ya ever need cash, I'm here	אם אי פעם תצטרך מזומן, אני כאן
+Y'all com'back now, y'hear	תחזרו אלינו, שמעתם
+You know a good deal when you see one	אתה מזהה עסקה טובה כשאתה רואה אחת
+Come and see us again please	בוא לבקר אותנו שוב בבקשה
+What else can I do for ya today?	מה עוד אוכל לעשות בשבילך היום?
+Can I interest you in something else?	אפשר לעניין אותך במשהו נוסף?
+You don't have anything to sell	אין לך שום דבר למכור
+Sorry, I really do not have room to buy anything else	מצטער, באמת אין לי מקום לקנות עוד משהו
+Sorry, I don't need another one of those	מצטער, אני לא צריך עוד אחד כזה
+I'll give you $%d for your %s, take it or leave it	אתן לך $%d תמורת %s, קח או תשאיר
+#
+# --- broker
+You don't have enough cash!	אין לך מספיק מזומן!
+A $3 Broker's fee is deducted for the sale of each T-Bill	על כל מכירת אג"ח מנוכים $3 עמלת ברוקר
+You do not own any shares	אין לך מניות
+#
+# --- newspaper headlines
+BANKS FALTER! SAVINGS LOST! JOBS LOST!	הבנקים קורסים! החסכונות אבדו! המשרות אבדו!
+SCANDAL ON WALL ST. ECONOMY DROPS! UNEMPLOYMENT RISES	שערורייה בוול סטריט. הכלכלה צונחת! האבטלה עולה
+MORE S & L'S FAIL! ECONOMY SUFFERS	עוד בנקי חיסכון נכשלים! הכלכלה סובלת
+INFLATION IS UP PRICES COULD SOAR!	האינפלציה עולה, המחירים עלולים לזנק!
+GOLD OUTLOOK IS GOOD	התחזית לזהב טובה
+GOLD INVESTMENTS LOOK TARNISHED	השקעות הזהב מאבדות ברק
+GOOD TIMES AHEAD FOR SILVER	ימים טובים צפויים לכסף
+EXPERTS AGREE GET OUT OF SILVER	המומחים מסכימים: צאו מהכסף
+PRESIDENT EATS PORK RINDS	הנשיא אוכל קרקרי עור חזיר
+GENERAL POPULATION HATES PORK RINDS	הציבור שונא קרקרי עור חזיר
+BLUE CHIP STOCKS OUTLOOK ROSEY	תחזית ורודה למניות הבלו צ'יפ
+HARD TIMES AHEAD FOR BIG BLUE	ימים קשים צפויים לביג בלו
+PENNY STOCKS ARE WISE INVESTMENT	מניות הזבל הן השקעה נבונה
+PENNY STOCKS NOT WORTH A DIME	מניות הזבל לא שוות פרוטה
+WILD WILLY RIPS OFF ANOTHER APARTMENT	ווילי הפרוע פרץ לעוד דירה
+WILD WILLY HAS LIFTED ANOTHER WALLET	ווילי הפרוע כייס עוד ארנק
+BIG LOTTERY WINNER!	זוכה גדול בלוטו!
+INVESTMENTS RECOMMENDED	מומלץ להשקיע
+INVESTMENTS NOT RECOMMENDED	לא מומלץ להשקיע
+ECONOMIC OUTLOOK GOOD	התחזית הכלכלית טובה
+ECONOMIC OUTLOOK POOR	התחזית הכלכלית עגומה
+UNEMPLOYMENT IS ON THE RISE	האבטלה בעלייה
+UNEMPLOYMENT IS DOWN	האבטלה יורדת
+NOBODY YOU KNOW WON THE LOTTO!	אף אחד שאתה מכיר לא זכה בלוטו!
+PRESIDENT HATES BROCCOLI	הנשיא שונא ברוקולי
+MORE FAST FOOD PLACES USING SOY BEANS	עוד מסעדות מזון מהיר משתמשות בסויה
+SCHOOL ENROLLMENT UP	עלייה בהרשמה ללימודים
+SCHOOL ENROLLMENT DOWN	ירידה בהרשמה ללימודים
+THERE IS MONEY IN COMPUTERS	יש כסף במחשבים
+HOUSING MARKET LOOKS GOOD	שוק הדיור נראה טוב
+SALES OF NEWSPAPERS HAVE SKYROCKETED	מכירות העיתונים זינקו
+PAWN SHOPS SERVE USEFUL PURPOSE	בתי עבוט ממלאים תפקיד מועיל
+NORTH SHORE OF BASS LAKE SINKS	החוף הצפוני של אגם באס שוקע
+ALICE COOPER GIVES BIRTH TO TWIN BOYS	אליס קופר יולדת תאומים
+COARSEGOLD PURCHASED BY JAPAN	יפן קנתה את קורסגולד
+SPACE QUEST III WINS BIG AWARD	ספייס קווסט 3 זוכה בפרס גדול
+ELVIS SIGHTED AT KFC IN OAKHURST	אלביס נצפה ב-KFC באוקהרסט
+TALKING BEAR KIDNAPPED! FBI INVESTIGATING	דוב מדבר נחטף! ה-FBI חוקר
+KINGS QUEST XXIX GOES TO PRODUCTION	קינגס קווסט 29 נכנס להפקה
+MR. WHIPPLE FOUND SQUEEZED TO DEATH IN APARTMENT	מר ויפל נמצא סחוט למוות בדירתו
+REAGAN'S NAP INTERRUPTS SPEECH	תנומת רייגן קוטעת נאום
+MOTHER GOOSE GETS DIVORCE! FEATHERS RUFFLED	אמא אווזה מתגרשת! הנוצות סמורות
+MOTHER GOOSE SUSPECTED OF FOWL PLAY	אמא אווזה חשודה במשחק עוף
+SALMON BITING OFF NORTH SHORE OF BASS LAKE	הסלמון נושך בחוף הצפוני של אגם באס
+NIXON MAKES ROCK VIDEO	ניקסון מצלם קליפ רוק
+FORD STUMBLES ON CURE	פורד מועד על תרופה
+NEW GOVT STUDY SHOWS GAME PLAYERS GET SICK TOO!	מחקר ממשלתי: גם שחקני משחקים חולים!
+AMELDA M. LOOKING FOR A FEW GOOD SHOES	אימלדה מ. מחפשת כמה נעליים טובות
+NANCY IS LOOKING FOR A NEW DRESS	ננסי מחפשת שמלה חדשה
+TYpEsETTrs U ion goe oN STR KE!	אגוד הסדרים פתח בשבתיה!
+FIREMEN ARE ALWAYS IN HEAT	הכבאים תמיד בוערים
+PRESIDENT FINALLY EATS BROCCOLI	הנשיא סוף סוף אוכל ברוקולי
+PRESIDENT EATS BROCCOLI AND LIVES!	הנשיא אוכל ברוקולי ושורד!
+STUDY SHOWS WE HAVE MORE LEISURE TIME	מחקר: יש לנו יותר זמן פנוי
+SOL. WE NEED A HEADLINE HERE!	סול, צריך כאן כותרת!
+TORNADO KILLS 8 THEN COMMITS SUICIDE!	טורנדו הורג 8 ואז מתאבד!
+CIGARETTES FOUND TO CAUSE LABORATORY ANIMALS!	נמצא שסיגריות גורמות לחיות מעבדה!
+COURTS JAMMED! WAPNER REINSTATED!	בתי המשפט עמוסים! השופט וופנר הוחזר!
+GRAND CANYON DESIGNATED NATIONAL LANDFILL!	הגרנד קניון הוכרז מזבלה לאומית!
+CELEBRITY BULLFIGHTING DISASTER; LESLEY GORED	אסון במלחמת שוורים של סלבס; לסלי ננגחה
+GURUKA SINGH GETS HAIRCUT! PHOTOS UNDER WRAPS!	גורוקה סינג הסתפר! התמונות חסויות!
+RAP GROUP ARRESTED FOR NOT STARTING RIOT!	להקת ראפ נעצרה כי לא פתחה במהומה!
+TRAILER PARK DEMOLISHES 6 TORNADOES!	חניון קרוואנים הרס 6 טורנדו!
+#
+# --- life goal descriptions
+Wealth is defined as the total accumulation of money, savings, and investments. Try the stock market, and be on the watch for Wild Willy. And most importantly... sorry, out of room	עושר הוא סך הכסף, החסכונות וההשקעות. נסו את הבורסה, והיזהרו מווילי הפרוע. והכי חשוב... סליחה, נגמר המקום
+Happiness is accumulated by acquiring goods, achieving goals, taking time off from work, and helping little old ladies cross the street so that they don't get hit by any speeding marbles	אושר נצבר מקניית מוצרים, השגת מטרות, חופש מהעבודה, ועזרה לזקנות לחצות את הכביש כדי שגולות דוהרות לא יפגעו בהן
+Education is accumulated by attending the university and graduating from the classes offered. A computer and some reference books can be very beneficial to your studies	השכלה נצברת מלימודים באוניברסיטה וסיום הקורסים. מחשב וכמה ספרי עיון יכולים לעזור מאוד בלימודים
+Career is achieved by working hard, climbing the corporate ladder, improving your skills, dependability, and advancing your education. Remember, hire a kid, they have all the answers	קריירה מושגת בעבודה קשה, טיפוס בסולם הארגוני, שיפור הכישורים והאמינות וקידום ההשכלה. זכרו, תעסיקו ילד, יש לו את כל התשובות
+$%d Hr	$%d לשעה

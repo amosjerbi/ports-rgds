@@ -15,7 +15,7 @@
 enum { LOC_MESSAGE, LOC_ITEM, LOC_BUTTON };
 
 typedef struct {
-    char    label[48];
+    char    label[200];            /* whole messages: long store greetings too */
     char    price[12];             /* "$85", or "" */
     int16_t x0, y0, x1, y1;        /* screen rect, 320x200 */
     uint8_t kind;                  /* LOC_* */

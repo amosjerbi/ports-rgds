@@ -19,7 +19,7 @@ static const struct { int view; const char *name; } places[] = {
 
 #define MAX_RAW 24
 
-typedef struct { char text[96]; int16_t x0, y0, x1, y1; } RawText;
+typedef struct { char text[200]; int16_t x0, y0, x1, y1; } RawText;
 typedef struct { char name[32]; int16_t x0, y0, x1, y1; uint8_t type, enabled; } RawCtl;
 
 static int port_open, view;
@@ -64,7 +64,7 @@ static void pretty(char *out, size_t n, const char *obj)
 /* "Hamburgers.........|$85" -> label "Hamburgers", price "$85" */
 static void parse_row(const char *s, char *label, size_t ln, char *price, size_t pn)
 {
-    char t[96];
+    char t[200];
     size_t o = 0;
     for (size_t i = 0; s[i] && o + 1 < sizeof t; i++) {
         char c = s[i];
@@ -73,7 +73,17 @@ static void parse_row(const char *s, char *label, size_t ln, char *price, size_t
         t[o++] = c;
     }
     t[o] = 0;
-    char *d = strchr(t, '$');
+    /* a price is a trailing "$85" or "$5 Hr." after the label (not a "$50" inside a sentence) */
+    char *d = strrchr(t, '$');
+    if (d) {
+        const char *q = d + 1;
+        int digits = 0, unit = 0;
+        while (isdigit((unsigned char)*q) || *q == ',') { q++; digits++; }
+        while (*q == ' ') q++;
+        while (isalpha((unsigned char)*q) || *q == '.' || *q == '/') { q++; unit++; }
+        while (*q == ' ') q++;
+        if (!digits || unit > 4 || *q) d = NULL;
+    }
     price[0] = 0;
     if (d && d > t) {
         snprintf(price, pn, "%s", d);
@@ -90,7 +100,7 @@ static void parse_row(const char *s, char *label, size_t ln, char *price, size_t
 
 static void compose(void)
 {
-    char keep[48] = "";
+    char keep[sizeof entries[0].label] = "";
     if (user_moved && sel >= 0 && sel < nentries) snprintf(keep, sizeof keep, "%s", entries[sel].label);
     nentries = 0;
     /* text rows, top to bottom (two columns in some stores: left one first) */

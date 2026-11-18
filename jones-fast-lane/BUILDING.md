@@ -223,3 +223,9 @@ make scirun     # headless runner: build/mac/scirun <gamedir> -n <ticks> -f <fra
 make test       # decode every resource in GAMEDIR
 make gfxtest    # render all pics/views to build/gfx/*.png (macOS: uses sips)
 ```
+
+## Hebrew top screen
+
+`make he` / `make cd-he` build `build/jones-he.nds` / `build/jones-cdrom-he.nds` with the top screen in Hebrew. The
+translation table, font and Hebrew code live in the sibling folder `../jones-fast-lane-hebrew` (override with
+`HEDIR=`); see its README.

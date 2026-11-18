@@ -90,8 +90,20 @@ static void rescan(uint32_t now)
 
 static uint8_t *buf;
 
+#ifdef HEBREW
+/* Hebrew: the layout below is written left-to-right and mirrored here, so everything that was
+ * left-aligned ends up right-aligned; text is reordered for right-to-left reading. */
+#include "hebrew.h"
+#define T(s) he_tr(s)
+#define MX(x, w) (W - (x) - (w))
+#else
+#define T(s) (s)
+#define MX(x, w) (x)
+#endif
+
 static void fill(int x, int y, int w, int h, uint8_t c)
 {
+    x = MX(x, w);
     for (int j = y; j < y + h; j++) {
         if (j < 0 || j >= H) continue;
         for (int i = x; i < x + w; i++)
@@ -107,33 +119,69 @@ static const uint8_t *font(int n)
     return f;
 }
 
+#ifdef HEBREW
+/* the small font's space is 8 px, far too wide between the narrower Hebrew words */
+static int he_narrow_space(const uint8_t *f) { return (f[4] | f[5] << 8) < 10; }
+
+static const HeGlyph *he_glyph(const uint8_t *f, uint8_t ch)
+{
+    if (!he_letter(ch)) return NULL;
+    return ((f[4] | f[5] << 8) >= 10 ? he_font_big : he_font_small) + (ch - HE_FIRST);
+}
+#endif
+
 static int text_w(const uint8_t *f, const char *s)
 {
     int w = 0, n = f[2] | f[3] << 8;
     for (; *s; s++) {
         uint8_t ch = (uint8_t)*s;
+#ifdef HEBREW
+        const HeGlyph *hg = he_glyph(f, ch);
+        if (hg) { w += hg->w; continue; }
+        if (ch == ' ' && he_narrow_space(f)) { w += 4; continue; }
+#endif
         if (ch < n) w += f[f[6 + ch * 2] | f[7 + ch * 2] << 8];
     }
     return w;
 }
 
+static void put(int px, int py, uint8_t c)
+{
+    if (px >= 0 && px < W && py >= 0 && py < H) buf[py * W + px] = c;
+}
+
+/* draws s with its left edge at x (in the unmirrored layout); returns the x just past it */
 static int text(const uint8_t *f, int x, int y, const char *s, uint8_t c)
 {
-    int n = f[2] | f[3] << 8;
+    int n = f[2] | f[3] << 8, end = x + text_w(f, s);
+#ifdef HEBREW
+    char vis[320];
+    he_visual(s, vis, sizeof vis);
+    s = vis;
+    x = MX(x, end - x);
+#endif
     for (; *s; s++) {
         uint8_t ch = (uint8_t)*s;
+#ifdef HEBREW
+        const HeGlyph *hg = he_glyph(f, ch);
+        if (hg) {
+            for (int j = 0; j < hg->h; j++)
+                for (int i = 0; i < hg->w; i++)
+                    if (hg->rows[j] & (0x80 >> i)) put(x + i, y + j, c);
+            x += hg->w;
+            continue;
+        }
+        if (ch == ' ' && he_narrow_space(f)) { x += 4; continue; }
+#endif
         if (ch >= n) continue;
         const uint8_t *g = f + (f[6 + ch * 2] | f[7 + ch * 2] << 8);
         int gw = g[0], gh = g[1], bpr = (gw + 7) / 8;
         for (int j = 0; j < gh; j++)
             for (int i = 0; i < gw; i++)
-                if (g[2 + j * bpr + (i >> 3)] & (0x80 >> (i & 7))) {
-                    int px = x + i, py = y + j;
-                    if (px >= 0 && px < W && py >= 0 && py < H) buf[py * W + px] = c;
-                }
+                if (g[2 + j * bpr + (i >> 3)] & (0x80 >> (i & 7))) put(x + i, y + j, c);
         x += gw;
     }
-    return x;
+    return end;
 }
 
 /* Jobs: player `occupation` is the job's global indexNum (the jobs scripts
@@ -148,21 +196,21 @@ static const char *job_name(int occ)
         "Groundskeeper", "Apartment Manager", "Electronics Repair",
     };
     occ -= 42;
-    return occ >= 0 && occ < (int)(sizeof names / sizeof *names) ? names[occ] : "Employed";
+    return T(occ >= 0 && occ < (int)(sizeof names / sizeof *names) ? names[occ] : "Employed");
 }
 
 static const char *employer_name(int at)
 {
     switch (at) {
-    case 1:  return "Rent Office";
-    case 3:  return "Black's Market";
-    case 4:  return "Bank";
-    case 5:  return "Factory";
-    case 7:  return "Hi-Tech University";
-    case 8:  return "Socket City";
-    case 9:  return "QT Clothing";
-    case 10: return "Monolith Burgers";
-    case 11: return "Z-Mart";
+    case 1: return T("Rent Office");
+    case 3: return T("Black's Market");
+    case 4: return T("Bank");
+    case 5: return T("Factory");
+    case 7: return T("Hi-Tech University");
+    case 8: return T("Socket City");
+    case 9: return T("QT Clothing");
+    case 10: return T("Monolith Burgers");
+    case 11: return T("Z-Mart");
     default: return "";
     }
 }
@@ -178,7 +226,7 @@ static void bar(const uint8_t *f, int x, int y, int w, int h, int lw, int vw, co
     char s[16];
     snprintf(s, sizeof s, "%d/%d", stat, goal);
     int ty = y + (h - fh) / 2;
-    text(f, x, ty, label, C_DIM);
+    text(f, x, ty, T(label), C_DIM);
     int bx = x + lw, bw = w - lw - vw;
     fill(bx, y, bw, h, C_TRACK);
     fill(bx, y, bw * stat / 100, h, col);
@@ -193,12 +241,12 @@ static void job(const uint8_t *tf, const uint8_t *sf, int x, int y, int w, reg_t
 {
     int occ = uw(p, S_occupation), at = uw(p, S_worksAt), wage = uw(p, S_wage);
     if (!at || !occ) {
-        text(tf, x, y, "Unemployed", C_DIM);
-        if (!compact) text(sf, x, y + (tf[4] | tf[5] << 8) + 2, "Visit the Employment Office", C_DIM);
+        text(tf, x, y, T("Unemployed"), C_DIM);
+        if (!compact) text(sf, x, y + (tf[4] | tf[5] << 8) + 2, T("Visit the Employment Office"), C_DIM);
         return;
     }
     char ws[16];
-    snprintf(ws, sizeof ws, "$%d/hr", wage);
+    snprintf(ws, sizeof ws, T("$%d/hr"), wage);
     int wx = x + w - text_w(tf, ws);
     text(tf, wx, y, ws, C_MON);
     const char *title = job_name(occ), *emp = employer_name(at);
@@ -212,7 +260,7 @@ static void job(const uint8_t *tf, const uint8_t *sf, int x, int y, int w, reg_t
         text(tf, x, y, title, C_TEXT);
         if (emp[0]) {
             char at_s[40];
-            snprintf(at_s, sizeof at_s, "at %s", emp);
+            snprintf(at_s, sizeof at_s, T("at %s"), emp);
             text(sf, x, y + (tf[4] | tf[5] << 8) + 2, at_s, C_DIM);
         }
     }
@@ -227,14 +275,17 @@ static void draw(int nplayers, const int *idx)
     static const char *labels[4] = { "Wealth", "Happiness", "Education", "Career" };
     static const uint8_t cols[4] = { C_MON, C_HAP, C_EDU, C_CAR };
     static const char *short_labels[4] = { "Wealth", "Happy", "Educ.", "Career" };
-    int lw = text_w(small, "Happiness") + 6, vw = text_w(small, "100/100") + 4;
+    int lw = 0;
+    for (int i = 0; i < 4; i++) if (text_w(small, T(labels[i])) > lw) lw = text_w(small, T(labels[i]));
+    lw += 6;
+    int vw = text_w(small, "100/100") + 4;
 
     if (nplayers == 1) {
         reg_t p = players[idx[0]];
         /* header: name, cash top right */
         reg_t nm = get_sel(p, S_actualName);
         char name[40], cs[24];
-        snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : "Player");
+        snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : T("Player"));
         uint32_t cash = (uint16_t)get_sel(p, S_cash) | (uint32_t)(uint16_t)get_sel(p, S_cashHi) << 16;
         snprintf(cs, sizeof cs, "$%lu", (unsigned long)cash);
         int cw = text_w(small, cs) + 12;
@@ -244,12 +295,12 @@ static void draw(int nplayers, const int *idx)
         /* job card */
         int jy = 20, jh = 14 + bh + 2 * fh + 6;
         fill(4, jy, W - 8, jh, C_PANEL);
-        text(small, 10, jy + 4, "JOB", C_DIM);
+        text(small, 10, jy + 4, T("JOB"), C_DIM);
         job(big, small, 10, jy + 6 + fh + 3, W - 20, p, 0);
         /* life goals, compact */
         int gy = jy + jh + 8;
-        text(small, 6, gy, "Life goals", C_DIM);
-        fill(6 + text_w(small, "Life goals") + 4, gy + fh / 2, W - 16 - text_w(small, "Life goals"), 1, C_PANEL);
+        text(small, 6, gy, T("Life goals"), C_DIM);
+        fill(6 + text_w(small, T("Life goals")) + 4, gy + fh / 2, W - 16 - text_w(small, T("Life goals")), 1, C_PANEL);
         gy += fh + 6;
         int rowh = (H - 4 - gy) / 4;
         if (rowh > fh + 8) rowh = fh + 8;
@@ -267,7 +318,7 @@ static void draw(int nplayers, const int *idx)
         fill(4, y, W - 8, ph - 3, C_PANEL);
         reg_t nm = get_sel(p, S_actualName);
         char name[40], cs[24];
-        snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : "Player");
+        snprintf(name, sizeof name, "%s", nm >= HEAP_START ? hstr(nm) : T("Player"));
         uint32_t cash = (uint16_t)get_sel(p, S_cash) | (uint32_t)(uint16_t)get_sel(p, S_cashHi) << 16;
         snprintf(cs, sizeof cs, "$%lu", (unsigned long)cash);
         text(small, 9, y + 2, name, C_TITLE);
@@ -283,7 +334,10 @@ static void draw(int nplayers, const int *idx)
         } else {
             /* 2x2 grid with short labels */
             int rowh = gh / 2, half = (W - 18 - 10) / 2;
-            int slw = text_w(small, "Career") + 4, svw = text_w(small, "50/50") + 4;
+            int slw = 0;
+            for (int i = 0; i < 4; i++) if (text_w(small, T(short_labels[i])) > slw) slw = text_w(small, T(short_labels[i]));
+            slw += 4;
+            int svw = text_w(small, "50/50") + 4;
             for (int i = 0; i < 4; i++) {
                 int bx = 9 + (i & 1) * (half + 10), by = gy + (i >> 1) * rowh + (rowh - 3) / 2;
                 bar(small, bx, by, half, 3, slw, svw, short_labels[i], uw(p, S_stat[i]), uw(p, S_goal[i]), cols[i]);
@@ -333,7 +387,7 @@ static void draw_location(void)
         fill(W - 4 - cw, 3, cw, fh + 4, C_TRACK);
         text(small, W - 4 - cw + 6, 5, cash, C_TITLE);
     }
-    const char *title = locpanel_title();
+    const char *title = T(locpanel_title());
     int tw = text_w(big, title), avail = W - 8 - cw;
     text(big, 4 + (avail > tw ? (avail - tw) / 2 : 0), 3, title, C_TITLE);
 
@@ -343,7 +397,7 @@ static void draw_location(void)
     fill(4, top, W - 8, bottom - top, C_PANEL);
     /* buttons along the bottom of the panel */
     int bh = fh + 5, nb = 0, bw_total = 0;
-    for (int i = 0; i < n; i++) if (e[i].kind == LOC_BUTTON) { nb++; bw_total += text_w(small, e[i].label) + 14; }
+    for (int i = 0; i < n; i++) if (e[i].kind == LOC_BUTTON) { nb++; bw_total += text_w(small, T(e[i].label)) + 14; }
     int rows_bottom = bottom - (nb ? bh + 6 : 2);
     if (nb) {
         int gap = nb > 1 ? (W - 16 - bw_total) / (nb - 1) : 0;
@@ -353,10 +407,10 @@ static void draw_location(void)
         int x = (W - total) / 2, y = bottom - bh - 3;
         for (int i = 0; i < n; i++) {
             if (e[i].kind != LOC_BUTTON) continue;
-            int bw = text_w(small, e[i].label) + 14;
+            int bw = text_w(small, T(e[i].label)) + 14;
             fill(x, y, bw, bh, i == sel ? C_SEL : C_TRACK);
             if (i == sel) { fill(x, y, bw, 1, C_GOAL); fill(x, y + bh - 1, bw, 1, C_GOAL); }
-            text(small, x + 7, y + 3, e[i].label, !e[i].enabled ? C_DIM : i == sel ? C_DONE : C_TEXT);
+            text(small, x + 7, y + 3, T(e[i].label), !e[i].enabled ? C_DIM : i == sel ? C_DONE : C_TEXT);
             x += bw + gap;
         }
     }
@@ -365,15 +419,15 @@ static void draw_location(void)
     for (int i = 0; i < n && y + fh <= rows_bottom; i++) {
         if (e[i].kind == LOC_BUTTON) continue;
         if (e[i].kind == LOC_MESSAGE) {
-            wrap(small, 10, &y, W - 20, e[i].label, C_DIM, fh, rows_bottom);
+            wrap(small, 10, &y, W - 20, T(e[i].label), C_DIM, fh, rows_bottom);
             y += 2;
             continue;
         }
         if (i == sel) fill(6, y - 2, W - 12, rh, C_SEL);
         uint8_t tc = !e[i].enabled ? C_DIM : i == sel ? C_DONE : C_TEXT;
         if (i == sel) text(small, 9, y, ">", C_GOAL);
-        text(small, 17, y, e[i].label, tc);
-        if (e[i].price[0]) text(small, W - 12 - text_w(small, e[i].price), y, e[i].price, i == sel ? C_DONE : C_TITLE);
+        text(small, 17, y, T(e[i].label), tc);
+        if (e[i].price[0]) text(small, W - 12 - text_w(small, T(e[i].price)), y, T(e[i].price), i == sel ? C_DONE : C_TITLE);
         y += rh;
     }
 }
