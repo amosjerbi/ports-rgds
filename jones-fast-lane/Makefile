@@ -19,7 +19,7 @@ GAMEDIR  ?= $(CURDIR)/Jones-in-the-Fast-Lane_DOS_EN
 ARM7ELF  ?= $(CALICO)/bin/ds7_ragdoll.elf
 
 ENGINE   := src/engine/resource.c src/engine/decompress.c src/engine/gfx.c
-NDS_SRC  := src/nds/main.c $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c src/engine/locpanel.c
+NDS_SRC  := src/nds/main.c $(ENGINE) src/engine/vm.c src/engine/kernel.c src/engine/kgraphics.c src/engine/ksound.c src/engine/ksave.c src/engine/music.c src/engine/topstatus.c src/engine/voice.c src/engine/subtitle.c src/engine/balloon.c src/engine/locpanel.c src/nds/scale.itcm.c
 NDS_ASM  := src/nds/gamedata.s
 
 ARCH9    := -march=armv5te -mtune=arm946e-s -mthumb
@@ -76,6 +76,10 @@ build/mac/textdump: tools/textdump.c $(ENGINE) src/engine/resource.h
 
 build/jones-cdrom.elf: $(CDOBJS)
 	$(CC9) $(LDFLAGS9) $^ $(LIBS9) -o $@
+
+$(CDOBJDIR)/%.itcm.o: src/%.itcm.c $(wildcard src/nds/*.h)
+	@mkdir -p $(dir $@)
+	$(CC9) $(CFLAGS9) -DCDROM $(CDEXTRA) -marm -O3 -c $< -o $@
 
 $(CDOBJDIR)/%.o: src/%.c $(wildcard src/engine/*.h)
 	@mkdir -p $(dir $@)

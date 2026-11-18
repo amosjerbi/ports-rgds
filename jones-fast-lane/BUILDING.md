@@ -166,6 +166,20 @@ Known limits on ROCKNIX:
 - **DraStic** runs calico ROMs only with the patch above, and still can't read
   NitroFS, so the CD build doesn't start there.
 
+### Anbernic RG DS (BananaOS)
+
+Copy `jones.nds` to `roms/nds` on the card (or over file sharing,
+`smb://<address>/banana`) and start it from the library. It runs in
+**SuperDrastic**, BananaOS's default DS emulator.
+
+- DraStic hands calico's ARM9 a heap end of 0 (the value the ARM7 sends at boot),
+  so every allocation failed and the game stopped with "audio: no AdLib patches"
+  and "script 0 not found". `main()` now falls back to the retail DS value
+  (`0x02380000`) when the value it got isn't a sane heap end.
+- The CD build doesn't start in SuperDrastic (no NitroFS, as above).
+- **BananaDS** (BananaOS's melonDS-based emulator) crashes in calico's startup
+  code, before the game runs, with both builds. Use SuperDrastic.
+
 ---
 
 ## Using a stock devkitPro

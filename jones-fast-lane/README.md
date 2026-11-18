@@ -34,7 +34,8 @@ game; see **[BUILDING.md](BUILDING.md)**.
 
 ## Features
 
-- **Bottom screen:** the 320×200 game, scaled by the DS hardware. Tap to click.
+- **Bottom screen:** the 320×200 game, reduced to 256×192 in software. It drops the pixel that repeats
+  a neighbour, so thin text stays sharp and keeps every stroke (`src/nds/scale.itcm.c`). Tap to click.
   The d-pad acts as the arrow keys; A/Start = Enter, B = Esc.
 - **Top screen:** a player panel showing your current job, employer and
   hourly wage, plus your cash, with slim bars below for wealth, happiness,
@@ -55,7 +56,7 @@ game; see **[BUILDING.md](BUILDING.md)**.
   graphics.
 - **Save / restore:** L = save, R = restore. Saves go to `/data/jones/` on the
   SD card.
-- **RG DS:** runs in ROCKNIX's DSperate emulator with one DS screen per panel.
+- **RG DS:** runs in ROCKNIX's DSperate emulator, or in SuperDrastic on BananaOS, with one DS screen per panel.
   See [BUILDING.md](BUILDING.md#anbernic-rg-ds-rocknix).
 
 ## How it works

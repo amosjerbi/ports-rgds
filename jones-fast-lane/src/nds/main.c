@@ -27,6 +27,7 @@
 #include "../engine/subtitle.h"
 #include "../engine/balloon.h"
 #include "../engine/locpanel.h"
+#include "scale.h"
 #include <calico/nds/nitrorom.h>
 
 extern const uint8_t res_map_data[], res_map_end[];
@@ -176,29 +177,29 @@ static void present_now(void)
         top_screen_off();
     }
     if (gfx.palette_dirty) {
+        static u16 pal[256];
         for (int i = 0; i < 256; i++) {
             PalColor *c = &gfx.palette[i];
             int in = gfx.intensity[i];
-            u16 v = RGB15((c->r * in / 100) >> 3, (c->g * in / 100) >> 3, (c->b * in / 100) >> 3);
-            BG_PALETTE_SUB[i] = v;
+            pal[i] = RGB15((c->r * in / 100) >> 3, (c->g * in / 100) >> 3, (c->b * in / 100) >> 3);
         }
+        scale_set_palette(pal);             /* the bottom screen is RGB15: the palette is applied there */
         gfx.palette_dirty = 0;
     }
-    DC_FlushRange(gfx.display, sizeof gfx.display);
     u16 *t = bgGetGfxPtr(bg_top), *b = bgGetGfxPtr(bg_bot);
     const uint8_t *src = gfx.display;
     if (balloon_signature(plat_ticks())) {      /* speech balloon over a copy */
         static uint8_t frame[SCREEN_W * SCREEN_H] __attribute__((aligned(32)));
         memcpy(frame, gfx.display, sizeof frame);
-        if (balloon_overlay(frame, plat_ticks())) { DC_FlushRange(frame, sizeof frame); src = frame; }
+        if (balloon_overlay(frame, plat_ticks())) src = frame;
     }
     if (top_status && st == 2) {
         DC_FlushRange(status_buf, sizeof status_buf);
         for (int y = 0; y < TOPSTATUS_H; y++)
             dmaCopy(status_buf + y * TOPSTATUS_W, t + y * 256, TOPSTATUS_W);
     }
-    for (int y = 0; y < SCREEN_H; y++)
-        dmaCopy(src + y * SCREEN_W, b + y * 256, SCREEN_W);
+    /* 320x200 filtered to 256x192 in software (the hardware scaler drops columns: thin text broke up) */
+    scale_frame(src, b);
     PERF_END(perf_present);
 }
 
@@ -648,7 +649,27 @@ static int engine_main(void *arg)
         { res_vol2_data, (uint32_t)(res_vol2_end - res_vol2_data), NULL, NULL },
     };
 #endif
+#if defined(DIAGHEAP) && !defined(CDROM)
+    {
+        extern char *fake_heap_start, *fake_heap_end;
+        extern void *sbrk(ptrdiff_t);
+        uint32_t ms = 0;
+        for (const uint8_t *p = res_map_data; p < res_map_end; p++) ms = ms * 31 + *p;
+        vm_log("heap %p..%p sbrk %p\n", (void *)fake_heap_start, (void *)fake_heap_end, sbrk(0));
+        void *t = malloc(256 * 1024);
+        vm_log("malloc256k %p map %p+%u sum %08lx\n", t, (void *)res_map_data,
+               (unsigned)(res_map_end - res_map_data), (unsigned long)ms);
+        free(t);
+        vm_log("vol1 %p %02x%02x%02x%02x vol2 %p %02x%02x%02x%02x\n",
+               (void *)res_vol1_data, res_vol1_data[0], res_vol1_data[1], res_vol1_data[2], res_vol1_data[3],
+               (void *)res_vol2_data, res_vol2_data[0], res_vol2_data[1], res_vol2_data[2], res_vol2_data[3]);
+    }
+    int rir =
+#endif
     res_init(res_map_data, (uint32_t)(res_map_end - res_map_data), vols, (int)(sizeof vols / sizeof *vols));
+#if defined(DIAGHEAP) && !defined(CDROM)
+    vm_log("res_init %d count %d scfg %08lx\n", rir, res_count(), (unsigned long)*(volatile uint32_t *)0x04004000);
+#endif
     res_set_cache_budget(1024 * 1024);
     DIAGW(0,31,31);
     gfx_init();
@@ -714,14 +735,22 @@ static int engine_main(void *arg)
 
 int main(void)
 {
+    /* calico's ARM9 bootstub takes the end of the heap from the ARM7 over the IPC FIFO (the end of main
+     * RAM reserved for the ARM9: 0x02380000 on a retail DS). DraStic (SuperDrastic on the RG DS) delivers 0
+     * there, so every malloc failed and the engine found no resources ("no AdLib patches", "script 0 not
+     * found"). Fall back to the retail DS value when what arrived is not a sane end of heap. */
+    {
+        extern char *fake_heap_start, *fake_heap_end;
+        if (fake_heap_end <= fake_heap_start || (uintptr_t)fake_heap_end > 0x03000000)
+            fake_heap_end = (char *)0x02380000;
+    }
     videoSetMode(MODE_5_2D);
     videoSetModeSub(MODE_5_2D);
     vramSetBankA(VRAM_A_MAIN_BG);
     vramSetBankC(VRAM_C_SUB_BG);
     bg_top = bgInit(3, BgType_Bmp8, BgSize_B8_512x256, 0, 0);
-    bg_bot = bgInitSub(3, BgType_Bmp8, BgSize_B8_512x256, 0, 0);
-    /* bottom: whole game scaled to fit by the hardware (affine, 8.8) */
-    bgSetScale(bg_bot, (320 << 8) / 256, (200 << 8) / 192);
+    /* bottom: the whole game, filtered to 256x192 by scale_frame (16-bit bitmap, 1:1) */
+    bg_bot = bgInitSub(3, BgType_Bmp16, BgSize_B16_256x256, 0, 0);
     top_screen_off();
     bgUpdate();
 #ifdef PERF
